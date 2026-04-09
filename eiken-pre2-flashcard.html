@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英検準2級 単語フラッシュカード</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--pri:#059669;--pri-light:#d1fae5;--pri-dark:#047857;--success:#16a34a;--danger:#dc2626;--warn:#f59e0b;--gray:#6b7280;--bg:#f0fdf4;--shadow:0 4px 24px rgba(0,0,0,0.10)}
+body{font-family:'Segoe UI','Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:#1e293b;min-height:100vh}
+
+.header{background:linear-gradient(135deg,#047857,#059669);color:#fff;padding:16px 20px;text-align:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:1.3rem;font-weight:700}
+.header p{font-size:0.8rem;opacity:0.85;margin-top:2px}
+
+/* Countdown banner */
+.countdown-banner{background:linear-gradient(90deg,#fbbf24,#f59e0b);color:#78350f;padding:10px;text-align:center;font-weight:700;font-size:0.9rem}
+.countdown-banner .days{font-size:1.4rem;color:#92400e}
+.countdown-banner .pace{font-size:0.75rem;font-weight:500;margin-top:2px}
+
+.nav-tabs{display:flex;background:#fff;border-bottom:2px solid #e2e8f0;overflow-x:auto}
+.nav-tab{flex:1;padding:12px 8px;text-align:center;font-size:0.85rem;font-weight:600;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap;min-width:70px}
+.nav-tab.active{color:var(--pri);border-bottom-color:var(--pri)}
+.nav-tab:hover{background:var(--pri-light)}
+
+.screen{display:none;padding:16px;max-width:600px;margin:0 auto}
+.screen.active{display:block}
+
+.stats-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stat-chip{background:#fff;border-radius:20px;padding:6px 14px;font-size:0.8rem;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.stat-chip.green{color:var(--pri);border:1.5px solid var(--pri)}
+.stat-chip.success{color:var(--success);border:1.5px solid var(--success)}
+.stat-chip.red{color:var(--danger);border:1.5px solid var(--danger)}
+.stat-chip.orange{color:var(--warn);border:1.5px solid var(--warn)}
+
+.progress-container{background:#e2e8f0;border-radius:12px;height:10px;margin-bottom:20px;overflow:hidden}
+.progress-fill{height:100%;border-radius:12px;background:linear-gradient(90deg,var(--pri),#34d399);transition:width 0.4s}
+
+.card-container{perspective:1000px;margin:0 auto 20px;max-width:440px}
+.flashcard{width:100%;min-height:260px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform 0.5s;border-radius:20px}
+.flashcard.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;box-shadow:var(--shadow)}
+.card-front{background:linear-gradient(145deg,#fff,#f0fdf4);border:2px solid #a7f3d0}
+.card-back{background:linear-gradient(145deg,#d1fae5,#a7f3d0);border:2px solid #6ee7b7;transform:rotateY(180deg)}
+.card-category{font-size:0.7rem;color:var(--pri);background:var(--pri-light);padding:3px 10px;border-radius:10px;margin-bottom:12px;font-weight:600}
+.card-word{font-size:2.2rem;font-weight:700;color:#1e293b;margin-bottom:8px;text-align:center}
+.card-phonetic{font-size:0.9rem;color:var(--gray);margin-bottom:8px}
+.card-meaning{font-size:1.5rem;font-weight:700;color:var(--pri-dark);text-align:center;margin-bottom:8px}
+.card-example{font-size:0.85rem;color:#475569;text-align:center;line-height:1.5;max-width:350px}
+.card-hint{font-size:0.75rem;color:var(--gray);margin-top:16px}
+.card-number{position:absolute;top:12px;right:16px;font-size:0.7rem;color:#94a3b8}
+.diff-badge{position:absolute;top:12px;left:16px;font-size:0.65rem;padding:2px 8px;border-radius:8px;font-weight:600}
+.diff-badge.hard{background:#fee2e2;color:var(--danger)}
+.diff-badge.medium{background:#fef3c7;color:#b45309}
+.diff-badge.new{background:#d1fae5;color:var(--pri-dark)}
+
+.btn-row{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.btn{padding:12px 28px;border:none;border-radius:14px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.btn:active{transform:scale(0.96)}
+.btn-know{background:#dcfce7;color:var(--success)}
+.btn-know:hover{background:#bbf7d0}
+.btn-dont{background:#fee2e2;color:var(--danger)}
+.btn-dont:hover{background:#fecaca}
+.btn-primary{background:var(--pri);color:#fff}
+.btn-primary:hover{background:var(--pri-dark)}
+.btn-secondary{background:#e2e8f0;color:#475569}
+.btn-secondary:hover{background:#cbd5e1}
+.btn-sm{padding:8px 16px;font-size:0.8rem;border-radius:10px}
+
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px}
+.category-card{background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:14px;text-align:center;cursor:pointer;transition:all 0.2s}
+.category-card:hover{border-color:var(--pri);background:var(--pri-light)}
+.category-card.selected{border-color:var(--pri);background:var(--pri-light)}
+.cat-icon{font-size:1.5rem;margin-bottom:4px}
+.cat-name{font-size:0.8rem;font-weight:600}
+.cat-count{font-size:0.7rem;color:var(--gray)}
+
+.mode-selector{display:flex;gap:10px;margin-bottom:20px}
+.mode-btn{flex:1;padding:14px;background:#fff;border:2px solid #e2e8f0;border-radius:14px;text-align:center;cursor:pointer;transition:all 0.2s}
+.mode-btn:hover{border-color:var(--pri)}
+.mode-btn.selected{border-color:var(--pri);background:var(--pri-light)}
+.mode-icon{font-size:1.8rem;margin-bottom:6px}
+.mode-name{font-size:0.85rem;font-weight:700}
+.mode-desc{font-size:0.7rem;color:var(--gray);margin-top:2px}
+
+.section-header{font-size:1.1rem;font-weight:700;margin-bottom:12px}
+.section-sub{font-size:0.8rem;color:var(--gray);margin-bottom:16px}
+
+.result-card{background:#fff;border-radius:20px;padding:30px;text-align:center;box-shadow:var(--shadow);margin-bottom:20px}
+.result-score{font-size:3rem;font-weight:800}
+.result-label{font-size:1rem;color:var(--gray);margin-top:4px}
+.result-message{font-size:1.1rem;font-weight:600;margin-top:16px;padding:12px;border-radius:12px}
+
+.search-box{width:100%;padding:10px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:0.9rem;margin-bottom:16px;outline:none}
+.search-box:focus{border-color:var(--pri)}
+
+.filter-chips{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;transition:all 0.2s}
+.filter-chip.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+.word-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-radius:12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.wi-word{font-weight:700;font-size:1rem}
+.wi-meaning{font-size:0.8rem;color:var(--gray)}
+.wi-status{font-size:0.7rem;padding:3px 8px;border-radius:8px;font-weight:600}
+.wi-status.mastered{background:#dcfce7;color:var(--success)}
+.wi-status.learning{background:#fef3c7;color:#b45309}
+.wi-status.new{background:#d1fae5;color:var(--pri-dark)}
+
+/* Backup */
+.backup-section{background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-top:20px}
+.backup-section h3{font-size:0.95rem;margin-bottom:12px}
+.backup-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px;padding:30px;max-width:360px;width:90%;text-align:center}
+.modal h3{margin-bottom:10px}
+.modal p{font-size:0.85rem;color:var(--gray);margin-bottom:20px}
+
+@media(max-width:480px){.card-word{font-size:1.7rem}.card-meaning{font-size:1.2rem}.flashcard{min-height:220px}.btn{padding:10px 20px;font-size:0.85rem}}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:slideIn 0.3s ease}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>英検準2級 単語フラッシュカード</h1>
+  <p>目標：2026年6月28日 合格！</p>
+</div>
+<div class="countdown-banner" id="countdown-banner"></div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" data-screen="home" onclick="showScreen('home')">🏠 ホーム</div>
+  <div class="nav-tab" data-screen="study" onclick="showScreen('study')">📖 学習</div>
+  <div class="nav-tab" data-screen="wordlist" onclick="showScreen('wordlist')">📋 単語帳</div>
+  <div class="nav-tab" data-screen="stats" onclick="showScreen('stats')">📊 成績</div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="stats-bar">
+    <div class="stat-chip green" id="home-total">全 0 語</div>
+    <div class="stat-chip success" id="home-mastered">覚えた 0</div>
+    <div class="stat-chip orange" id="home-learning">学習中 0</div>
+    <div class="stat-chip red" id="home-new">未学習 0</div>
+  </div>
+  <div class="progress-container"><div class="progress-fill" id="home-progress" style="width:0%"></div></div>
+
+  <div class="section-header">学習モード</div>
+  <div class="mode-selector">
+    <div class="mode-btn selected" onclick="selectMode('all')" id="mode-all"><div class="mode-icon">📚</div><div class="mode-name">全単語</div><div class="mode-desc">全範囲から出題</div></div>
+    <div class="mode-btn" onclick="selectMode('weak')" id="mode-weak"><div class="mode-icon">🔥</div><div class="mode-name">苦手特訓</div><div class="mode-desc">間違えた単語を重点的に</div></div>
+    <div class="mode-btn" onclick="selectMode('new')" id="mode-new"><div class="mode-icon">✨</div><div class="mode-name">未学習</div><div class="mode-desc">まだ見ていない単語</div></div>
+  </div>
+
+  <div class="section-header">カテゴリ</div>
+  <div class="section-sub">タップで選択（複数可・未選択なら全カテゴリ）</div>
+  <div class="category-grid" id="category-grid"></div>
+
+  <div style="text-align:center;margin-top:20px">
+    <button class="btn btn-primary" onclick="startStudy()" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px">学習スタート 🚀</button>
+  </div>
+</div>
+
+<!-- STUDY -->
+<div id="screen-study" class="screen">
+  <div class="stats-bar">
+    <div class="stat-chip green" id="study-prog">0/0</div>
+    <div class="stat-chip success" id="study-ok">⭕ 0</div>
+    <div class="stat-chip red" id="study-ng">❌ 0</div>
+  </div>
+  <div class="progress-container"><div class="progress-fill" id="study-bar" style="width:0%"></div></div>
+  <div class="card-container">
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="diff-badge new" id="card-diff">NEW</div>
+        <div class="card-number" id="card-num">1/20</div>
+        <div class="card-category" id="card-cat">カテゴリ</div>
+        <div class="card-word" id="card-word">word</div>
+        <div class="card-phonetic" id="card-ph"></div>
+        <div class="card-hint">タップして意味を確認 →</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-category" id="card-cat2">カテゴリ</div>
+        <div class="card-meaning" id="card-mean">意味</div>
+        <div class="card-example" id="card-ex">例文</div>
+      </div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-dont" onclick="mark(false)">❌ まだ覚えていない</button>
+    <button class="btn btn-know" onclick="mark(true)">⭕ 覚えた！</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-card animate-in">
+    <div class="result-score" id="res-score">0%</div>
+    <div class="result-label">正答率</div>
+    <div class="result-message" id="res-msg"></div>
+  </div>
+  <div id="res-wrong"></div>
+  <div class="btn-row" style="margin-top:20px">
+    <button class="btn btn-secondary" onclick="showScreen('home')">🏠 ホーム</button>
+    <button class="btn btn-primary" onclick="retryWrong()" id="retry-btn">🔥 間違えた単語を復習</button>
+  </div>
+</div>
+
+<!-- WORD LIST -->
+<div id="screen-wordlist" class="screen">
+  <input type="text" class="search-box" placeholder="🔍 単語を検索..." oninput="filterWords(this.value)">
+  <div class="filter-chips">
+    <div class="filter-chip active" onclick="setFilter('all',this)">すべて</div>
+    <div class="filter-chip" onclick="setFilter('mastered',this)">✅ 覚えた</div>
+    <div class="filter-chip" onclick="setFilter('learning',this)">📝 学習中</div>
+    <div class="filter-chip" onclick="setFilter('new',this)">🆕 未学習</div>
+  </div>
+  <ul class="word-list" id="word-list" style="list-style:none"></ul>
+</div>
+
+<!-- STATS -->
+<div id="screen-stats" class="screen">
+  <div class="section-header">学習統計</div>
+  <div class="result-card">
+    <div style="display:flex;justify-content:space-around;text-align:center">
+      <div><div style="font-size:2rem;font-weight:800;color:var(--pri)" id="s-sess">0</div><div style="font-size:0.75rem;color:var(--gray)">学習回数</div></div>
+      <div><div style="font-size:2rem;font-weight:800;color:var(--success)" id="s-mast">0</div><div style="font-size:0.75rem;color:var(--gray)">覚えた単語</div></div>
+      <div><div style="font-size:2rem;font-weight:800;color:var(--warn)" id="s-avg">0%</div><div style="font-size:0.75rem;color:var(--gray)">平均正答率</div></div>
+    </div>
+  </div>
+  <div class="section-header" style="margin-top:20px">カテゴリ別進捗</div>
+  <div id="cat-stats"></div>
+
+  <!-- Backup section -->
+  <div class="backup-section">
+    <h3>💾 データのバックアップ・復元</h3>
+    <p style="font-size:0.8rem;color:var(--gray);margin-bottom:12px">学習進捗をファイルに保存できます。ブラウザのデータが消えても安心！</p>
+    <div class="backup-btns">
+      <button class="btn btn-primary btn-sm" onclick="exportData()">📥 バックアップ保存</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">📤 バックアップ復元</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px">
+    <button class="btn btn-secondary btn-sm" onclick="showResetModal()">🗑️ データをリセット</button>
+  </div>
+</div>
+
+<!-- Reset Modal -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal">
+    <h3>データをリセットしますか？</h3>
+    <p>すべての学習進捗がリセットされます。</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="hideModal()">キャンセル</button>
+      <button class="btn btn-dont" onclick="resetAll()">リセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== WORDS: 英検準2級頻出単語 500語 =====
+const WORDS = [
+  // === 動詞（日常・学校） ===
+  {w:"accept",m:"受け入れる",p:"/əkˈsept/",ex:"She accepted the invitation.",cat:"動詞"},
+  {w:"achieve",m:"達成する",p:"/əˈtʃiːv/",ex:"He achieved his goal.",cat:"動詞"},
+  {w:"admire",m:"称賛する",p:"/ədˈmaɪər/",ex:"I admire her talent.",cat:"動詞"},
+  {w:"affect",m:"影響を与える",p:"/əˈfekt/",ex:"The weather affects our mood.",cat:"動詞"},
+  {w:"agree",m:"同意する",p:"/əˈɡriː/",ex:"I agree with your idea.",cat:"動詞"},
+  {w:"allow",m:"許可する",p:"/əˈlaʊ/",ex:"Pets are not allowed here.",cat:"動詞"},
+  {w:"announce",m:"発表する",p:"/əˈnaʊns/",ex:"They announced the results.",cat:"動詞"},
+  {w:"appear",m:"現れる、〜のようだ",p:"/əˈpɪr/",ex:"A rainbow appeared in the sky.",cat:"動詞"},
+  {w:"apply",m:"応募する、適用する",p:"/əˈplaɪ/",ex:"I applied for the job.",cat:"動詞"},
+  {w:"approach",m:"近づく",p:"/əˈproʊtʃ/",ex:"Winter is approaching.",cat:"動詞"},
+  {w:"argue",m:"議論する、口論する",p:"/ˈɑːrɡjuː/",ex:"They argued about the plan.",cat:"動詞"},
+  {w:"arrange",m:"手配する、並べる",p:"/əˈreɪndʒ/",ex:"She arranged the flowers.",cat:"動詞"},
+  {w:"assume",m:"仮定する、思い込む",p:"/əˈsuːm/",ex:"I assumed he was right.",cat:"動詞"},
+  {w:"attempt",m:"試みる",p:"/əˈtempt/",ex:"He attempted to climb the wall.",cat:"動詞"},
+  {w:"attend",m:"出席する",p:"/əˈtend/",ex:"I attended the meeting.",cat:"動詞"},
+  {w:"attract",m:"引きつける",p:"/əˈtrækt/",ex:"The event attracted many people.",cat:"動詞"},
+  {w:"avoid",m:"避ける",p:"/əˈvɔɪd/",ex:"Avoid eating too much sugar.",cat:"動詞"},
+  {w:"behave",m:"振る舞う",p:"/bɪˈheɪv/",ex:"Please behave yourself.",cat:"動詞"},
+  {w:"belong",m:"属する",p:"/bɪˈlɔːŋ/",ex:"This book belongs to me.",cat:"動詞"},
+  {w:"blame",m:"非難する",p:"/bleɪm/",ex:"Don't blame others.",cat:"動詞"},
+  {w:"borrow",m:"借りる",p:"/ˈbɑːroʊ/",ex:"Can I borrow your pen?",cat:"動詞"},
+  {w:"breathe",m:"呼吸する",p:"/briːð/",ex:"Breathe deeply and relax.",cat:"動詞"},
+  {w:"cancel",m:"取り消す",p:"/ˈkænsl/",ex:"The game was canceled.",cat:"動詞"},
+  {w:"celebrate",m:"祝う",p:"/ˈselɪbreɪt/",ex:"We celebrated his birthday.",cat:"動詞"},
+  {w:"challenge",m:"挑戦する",p:"/ˈtʃælɪndʒ/",ex:"She challenged the champion.",cat:"動詞"},
+  {w:"collect",m:"集める",p:"/kəˈlekt/",ex:"He collects stamps.",cat:"動詞"},
+  {w:"combine",m:"組み合わせる",p:"/kəmˈbaɪn/",ex:"Combine these two colors.",cat:"動詞"},
+  {w:"communicate",m:"伝える、意思疎通する",p:"/kəˈmjuːnɪkeɪt/",ex:"It's important to communicate clearly.",cat:"動詞"},
+  {w:"compare",m:"比較する",p:"/kəmˈper/",ex:"Compare these two pictures.",cat:"動詞"},
+  {w:"compete",m:"競争する",p:"/kəmˈpiːt/",ex:"The teams competed fiercely.",cat:"動詞"},
+  {w:"complain",m:"不満を言う",p:"/kəmˈpleɪn/",ex:"She complained about the noise.",cat:"動詞"},
+  {w:"concentrate",m:"集中する",p:"/ˈkɑːnsntreɪt/",ex:"Concentrate on your work.",cat:"動詞"},
+  {w:"concern",m:"心配させる、関係する",p:"/kənˈsɜːrn/",ex:"This issue concerns all of us.",cat:"動詞"},
+  {w:"confirm",m:"確認する",p:"/kənˈfɜːrm/",ex:"Please confirm the reservation.",cat:"動詞"},
+  {w:"connect",m:"つなぐ",p:"/kəˈnekt/",ex:"Connect the cable to the TV.",cat:"動詞"},
+  {w:"consider",m:"よく考える",p:"/kənˈsɪdər/",ex:"Consider all the options.",cat:"動詞"},
+  {w:"contain",m:"含む",p:"/kənˈteɪn/",ex:"This drink contains sugar.",cat:"動詞"},
+  {w:"continue",m:"続ける",p:"/kənˈtɪnjuː/",ex:"Please continue your story.",cat:"動詞"},
+  {w:"contribute",m:"貢献する",p:"/kənˈtrɪbjuːt/",ex:"She contributed to the project.",cat:"動詞"},
+  {w:"convince",m:"納得させる",p:"/kənˈvɪns/",ex:"He convinced me to go.",cat:"動詞"},
+  {w:"create",m:"創造する",p:"/kriˈeɪt/",ex:"She created a beautiful painting.",cat:"動詞"},
+  {w:"damage",m:"損害を与える",p:"/ˈdæmɪdʒ/",ex:"The storm damaged the roof.",cat:"動詞"},
+  {w:"deal",m:"扱う、取引する",p:"/diːl/",ex:"How do you deal with stress?",cat:"動詞"},
+  {w:"decrease",m:"減少する",p:"/dɪˈkriːs/",ex:"The number of students decreased.",cat:"動詞"},
+  {w:"deliver",m:"届ける、配達する",p:"/dɪˈlɪvər/",ex:"The package was delivered today.",cat:"動詞"},
+  {w:"demand",m:"要求する",p:"/dɪˈmænd/",ex:"They demanded an explanation.",cat:"動詞"},
+  {w:"depend",m:"頼る、〜次第である",p:"/dɪˈpend/",ex:"It depends on the weather.",cat:"動詞"},
+  {w:"describe",m:"描写する、説明する",p:"/dɪˈskraɪb/",ex:"Describe what you saw.",cat:"動詞"},
+  {w:"destroy",m:"破壊する",p:"/dɪˈstrɔɪ/",ex:"The fire destroyed the building.",cat:"動詞"},
+  {w:"determine",m:"決める、決心する",p:"/dɪˈtɜːrmɪn/",ex:"She was determined to succeed.",cat:"動詞"},
+  {w:"develop",m:"発展させる、開発する",p:"/dɪˈveləp/",ex:"They developed a new app.",cat:"動詞"},
+  {w:"disappear",m:"消える",p:"/ˌdɪsəˈpɪr/",ex:"The cat disappeared suddenly.",cat:"動詞"},
+  {w:"discover",m:"発見する",p:"/dɪˈskʌvər/",ex:"She discovered a new species.",cat:"動詞"},
+  {w:"discuss",m:"議論する",p:"/dɪˈskʌs/",ex:"Let's discuss the problem.",cat:"動詞"},
+  {w:"display",m:"展示する、表示する",p:"/dɪˈspleɪ/",ex:"The art was displayed beautifully.",cat:"動詞"},
+  {w:"divide",m:"分ける",p:"/dɪˈvaɪd/",ex:"Divide the cake into eight pieces.",cat:"動詞"},
+  {w:"donate",m:"寄付する",p:"/ˈdoʊneɪt/",ex:"She donated money to charity.",cat:"動詞"},
+  {w:"earn",m:"稼ぐ、得る",p:"/ɜːrn/",ex:"He earns a good salary.",cat:"動詞"},
+  {w:"educate",m:"教育する",p:"/ˈedʒukeɪt/",ex:"Schools educate children.",cat:"動詞"},
+  {w:"employ",m:"雇う",p:"/ɪmˈplɔɪ/",ex:"The company employs 200 people.",cat:"動詞"},
+  {w:"encourage",m:"励ます、奨励する",p:"/ɪnˈkɜːrɪdʒ/",ex:"My teacher encouraged me.",cat:"動詞"},
+  {w:"establish",m:"設立する",p:"/ɪˈstæblɪʃ/",ex:"The school was established in 1950.",cat:"動詞"},
+  {w:"examine",m:"調べる、検査する",p:"/ɪɡˈzæmɪn/",ex:"The doctor examined the patient.",cat:"動詞"},
+  {w:"exchange",m:"交換する",p:"/ɪksˈtʃeɪndʒ/",ex:"They exchanged gifts.",cat:"動詞"},
+  {w:"exist",m:"存在する",p:"/ɪɡˈzɪst/",ex:"Dinosaurs no longer exist.",cat:"動詞"},
+  {w:"expand",m:"拡大する",p:"/ɪkˈspænd/",ex:"The company is expanding.",cat:"動詞"},
+  {w:"expect",m:"期待する、予期する",p:"/ɪkˈspekt/",ex:"I expect good results.",cat:"動詞"},
+  {w:"experience",m:"経験する",p:"/ɪkˈspɪriəns/",ex:"She experienced many cultures.",cat:"動詞"},
+  {w:"explain",m:"説明する",p:"/ɪkˈspleɪn/",ex:"Please explain the rule.",cat:"動詞"},
+  {w:"explore",m:"探検する、調査する",p:"/ɪkˈsplɔːr/",ex:"They explored the island.",cat:"動詞"},
+  {w:"express",m:"表現する",p:"/ɪkˈspres/",ex:"Express your feelings honestly.",cat:"動詞"},
+  {w:"fix",m:"修理する、固定する",p:"/fɪks/",ex:"He fixed the broken chair.",cat:"動詞"},
+  {w:"flow",m:"流れる",p:"/floʊ/",ex:"The river flows into the sea.",cat:"動詞"},
+  {w:"force",m:"強制する",p:"/fɔːrs/",ex:"Don't force him to go.",cat:"動詞"},
+  {w:"forgive",m:"許す",p:"/fərˈɡɪv/",ex:"Please forgive my mistake.",cat:"動詞"},
+  {w:"gain",m:"得る",p:"/ɡeɪn/",ex:"She gained confidence.",cat:"動詞"},
+  {w:"gather",m:"集める、集まる",p:"/ˈɡæðər/",ex:"People gathered in the park.",cat:"動詞"},
+  {w:"graduate",m:"卒業する",p:"/ˈɡrædʒueɪt/",ex:"She graduated from college.",cat:"動詞"},
+  {w:"guess",m:"推測する",p:"/ɡes/",ex:"Can you guess the answer?",cat:"動詞"},
+  {w:"ignore",m:"無視する",p:"/ɪɡˈnɔːr/",ex:"Don't ignore the warning.",cat:"動詞"},
+  {w:"imagine",m:"想像する",p:"/ɪˈmædʒɪn/",ex:"Imagine a world without war.",cat:"動詞"},
+  {w:"import",m:"輸入する",p:"/ˈɪmpɔːrt/",ex:"Japan imports a lot of food.",cat:"動詞"},
+  {w:"improve",m:"改善する",p:"/ɪmˈpruːv/",ex:"She improved her English.",cat:"動詞"},
+  {w:"include",m:"含む",p:"/ɪnˈkluːd/",ex:"The price includes tax.",cat:"動詞"},
+  {w:"increase",m:"増加する",p:"/ɪnˈkriːs/",ex:"The population is increasing.",cat:"動詞"},
+  {w:"indicate",m:"示す",p:"/ˈɪndɪkeɪt/",ex:"The sign indicates danger.",cat:"動詞"},
+  {w:"influence",m:"影響を与える",p:"/ˈɪnfluəns/",ex:"Music influences our feelings.",cat:"動詞"},
+  {w:"inform",m:"知らせる",p:"/ɪnˈfɔːrm/",ex:"Please inform me of any changes.",cat:"動詞"},
+  {w:"insist",m:"主張する",p:"/ɪnˈsɪst/",ex:"She insisted on paying.",cat:"動詞"},
+  {w:"inspire",m:"鼓舞する、インスピレーションを与える",p:"/ɪnˈspaɪər/",ex:"Her speech inspired everyone.",cat:"動詞"},
+  {w:"intend",m:"〜するつもりだ",p:"/ɪnˈtend/",ex:"I intend to study abroad.",cat:"動詞"},
+  {w:"invent",m:"発明する",p:"/ɪnˈvent/",ex:"Who invented the telephone?",cat:"動詞"},
+  {w:"involve",m:"含む、巻き込む",p:"/ɪnˈvɑːlv/",ex:"The project involves teamwork.",cat:"動詞"},
+  {w:"judge",m:"判断する",p:"/dʒʌdʒ/",ex:"Don't judge people by appearance.",cat:"動詞"},
+  {w:"lack",m:"欠けている",p:"/læk/",ex:"He lacks experience.",cat:"動詞"},
+  {w:"manage",m:"管理する、なんとかする",p:"/ˈmænɪdʒ/",ex:"She manages the store.",cat:"動詞"},
+  {w:"measure",m:"測る、測定する",p:"/ˈmeʒər/",ex:"Measure the length of this desk.",cat:"動詞"},
+  {w:"mention",m:"言及する",p:"/ˈmenʃn/",ex:"He mentioned your name.",cat:"動詞"},
+  {w:"notice",m:"気づく",p:"/ˈnoʊtɪs/",ex:"I noticed a strange sound.",cat:"動詞"},
+  {w:"obtain",m:"手に入れる",p:"/əbˈteɪn/",ex:"He obtained a scholarship.",cat:"動詞"},
+  {w:"occur",m:"起こる",p:"/əˈkɜːr/",ex:"Accidents occur every day.",cat:"動詞"},
+  {w:"offer",m:"提供する、申し出る",p:"/ˈɔːfər/",ex:"He offered his help.",cat:"動詞"},
+  {w:"operate",m:"操作する、手術する",p:"/ˈɑːpəreɪt/",ex:"Can you operate this machine?",cat:"動詞"},
+  {w:"organize",m:"組織する、整理する",p:"/ˈɔːrɡənaɪz/",ex:"She organized the event.",cat:"動詞"},
+  {w:"participate",m:"参加する",p:"/pɑːrˈtɪsɪpeɪt/",ex:"Everyone should participate.",cat:"動詞"},
+  {w:"permit",m:"許可する",p:"/pərˈmɪt/",ex:"Smoking is not permitted here.",cat:"動詞"},
+  {w:"persuade",m:"説得する",p:"/pərˈsweɪd/",ex:"I persuaded him to come.",cat:"動詞"},
+  {w:"pour",m:"注ぐ",p:"/pɔːr/",ex:"Pour some water, please.",cat:"動詞"},
+  {w:"predict",m:"予測する",p:"/prɪˈdɪkt/",ex:"It's hard to predict the future.",cat:"動詞"},
+  {w:"prefer",m:"好む",p:"/prɪˈfɜːr/",ex:"I prefer tea to coffee.",cat:"動詞"},
+  {w:"prepare",m:"準備する",p:"/prɪˈper/",ex:"Prepare for the exam.",cat:"動詞"},
+  {w:"present",m:"発表する、贈る",p:"/prɪˈzent/",ex:"She presented her research.",cat:"動詞"},
+  {w:"prevent",m:"防ぐ",p:"/prɪˈvent/",ex:"Prevent accidents from happening.",cat:"動詞"},
+  {w:"produce",m:"生産する",p:"/prəˈduːs/",ex:"This factory produces cars.",cat:"動詞"},
+  {w:"promise",m:"約束する",p:"/ˈprɑːmɪs/",ex:"I promise to be on time.",cat:"動詞"},
+  {w:"protect",m:"守る",p:"/prəˈtekt/",ex:"Protect the environment.",cat:"動詞"},
+  {w:"prove",m:"証明する",p:"/pruːv/",ex:"Can you prove it?",cat:"動詞"},
+  {w:"provide",m:"提供する",p:"/prəˈvaɪd/",ex:"The hotel provides free Wi-Fi.",cat:"動詞"},
+  {w:"publish",m:"出版する",p:"/ˈpʌblɪʃ/",ex:"The book was published last year.",cat:"動詞"},
+  {w:"raise",m:"上げる、育てる",p:"/reɪz/",ex:"Raise your hand if you agree.",cat:"動詞"},
+  {w:"realize",m:"気づく、実現する",p:"/ˈriːəlaɪz/",ex:"I realized my mistake.",cat:"動詞"},
+  {w:"receive",m:"受け取る",p:"/rɪˈsiːv/",ex:"I received a letter.",cat:"動詞"},
+  {w:"recognize",m:"認識する、見覚えがある",p:"/ˈrekəɡnaɪz/",ex:"I recognized her voice.",cat:"動詞"},
+  {w:"recommend",m:"勧める",p:"/ˌrekəˈmend/",ex:"I recommend this restaurant.",cat:"動詞"},
+  {w:"reduce",m:"減らす",p:"/rɪˈduːs/",ex:"Reduce plastic waste.",cat:"動詞"},
+  {w:"reflect",m:"反映する、映す",p:"/rɪˈflekt/",ex:"The lake reflected the mountains.",cat:"動詞"},
+  {w:"refuse",m:"断る",p:"/rɪˈfjuːz/",ex:"She refused the offer.",cat:"動詞"},
+  {w:"relate",m:"関連する",p:"/rɪˈleɪt/",ex:"These topics are closely related.",cat:"動詞"},
+  {w:"release",m:"解放する、発売する",p:"/rɪˈliːs/",ex:"A new movie was released.",cat:"動詞"},
+  {w:"remain",m:"残る、〜のままである",p:"/rɪˈmeɪn/",ex:"Please remain seated.",cat:"動詞"},
+  {w:"remove",m:"取り除く",p:"/rɪˈmuːv/",ex:"Remove your shoes, please.",cat:"動詞"},
+  {w:"repair",m:"修理する",p:"/rɪˈper/",ex:"He repaired the bicycle.",cat:"動詞"},
+  {w:"replace",m:"取り替える",p:"/rɪˈpleɪs/",ex:"We need to replace the battery.",cat:"動詞"},
+  {w:"represent",m:"代表する、表す",p:"/ˌreprɪˈzent/",ex:"She represents Japan.",cat:"動詞"},
+  {w:"require",m:"必要とする",p:"/rɪˈkwaɪər/",ex:"This recipe requires eggs.",cat:"動詞"},
+  {w:"reserve",m:"予約する",p:"/rɪˈzɜːrv/",ex:"I reserved a table for two.",cat:"動詞"},
+  {w:"respect",m:"尊敬する",p:"/rɪˈspekt/",ex:"Respect other people's opinions.",cat:"動詞"},
+  {w:"respond",m:"返答する",p:"/rɪˈspɑːnd/",ex:"He didn't respond to my email.",cat:"動詞"},
+  {w:"result",m:"結果として生じる",p:"/rɪˈzʌlt/",ex:"Hard work results in success.",cat:"動詞"},
+  {w:"reveal",m:"明らかにする",p:"/rɪˈviːl/",ex:"The report revealed the truth.",cat:"動詞"},
+  {w:"search",m:"探す、検索する",p:"/sɜːrtʃ/",ex:"Search for information online.",cat:"動詞"},
+  {w:"select",m:"選ぶ",p:"/sɪˈlekt/",ex:"Select the correct answer.",cat:"動詞"},
+  {w:"separate",m:"分ける",p:"/ˈsepəreɪt/",ex:"Separate recyclables from trash.",cat:"動詞"},
+  {w:"share",m:"共有する、分かち合う",p:"/ʃer/",ex:"Let's share the pizza.",cat:"動詞"},
+  {w:"solve",m:"解決する",p:"/sɑːlv/",ex:"Solve the math problem.",cat:"動詞"},
+  {w:"spread",m:"広がる、広げる",p:"/spred/",ex:"The news spread quickly.",cat:"動詞"},
+  {w:"struggle",m:"もがく、奮闘する",p:"/ˈstrʌɡl/",ex:"She struggled with the homework.",cat:"動詞"},
+  {w:"succeed",m:"成功する",p:"/səkˈsiːd/",ex:"She succeeded in the exam.",cat:"動詞"},
+  {w:"suffer",m:"苦しむ",p:"/ˈsʌfər/",ex:"He suffered from a cold.",cat:"動詞"},
+  {w:"suggest",m:"提案する",p:"/səˈdʒest/",ex:"I suggest we take a break.",cat:"動詞"},
+  {w:"supply",m:"供給する",p:"/səˈplaɪ/",ex:"The factory supplies parts.",cat:"動詞"},
+  {w:"support",m:"支える、支持する",p:"/səˈpɔːrt/",ex:"I support your decision.",cat:"動詞"},
+  {w:"suppose",m:"仮定する、〜だと思う",p:"/səˈpoʊz/",ex:"I suppose you're right.",cat:"動詞"},
+  {w:"survive",m:"生き残る",p:"/sərˈvaɪv/",ex:"They survived the earthquake.",cat:"動詞"},
+  {w:"treat",m:"扱う、治療する、おごる",p:"/triːt/",ex:"Treat others with kindness.",cat:"動詞"},
+  {w:"waste",m:"無駄にする",p:"/weɪst/",ex:"Don't waste water.",cat:"動詞"},
+  {w:"wonder",m:"不思議に思う",p:"/ˈwʌndər/",ex:"I wonder why she left.",cat:"動詞"},
+  {w:"wrap",m:"包む",p:"/ræp/",ex:"Wrap the present in paper.",cat:"動詞"},
+  // === 形容詞 ===
+  {w:"actual",m:"実際の",p:"/ˈæktʃuəl/",ex:"What is the actual cost?",cat:"形容詞"},
+  {w:"ancient",m:"古代の",p:"/ˈeɪnʃənt/",ex:"Ancient temples are beautiful.",cat:"形容詞"},
+  {w:"anxious",m:"心配な、不安な",p:"/ˈæŋkʃəs/",ex:"She was anxious about the test.",cat:"形容詞"},
+  {w:"appropriate",m:"適切な",p:"/əˈproʊpriət/",ex:"Wear appropriate clothing.",cat:"形容詞"},
+  {w:"artificial",m:"人工の",p:"/ˌɑːrtɪˈfɪʃl/",ex:"Artificial flowers look real.",cat:"形容詞"},
+  {w:"available",m:"利用できる",p:"/əˈveɪləbl/",ex:"Is this seat available?",cat:"形容詞"},
+  {w:"aware",m:"気づいている",p:"/əˈwer/",ex:"Be aware of the danger.",cat:"形容詞"},
+  {w:"brief",m:"簡潔な、短い",p:"/briːf/",ex:"Give me a brief summary.",cat:"形容詞"},
+  {w:"calm",m:"穏やかな、落ち着いた",p:"/kɑːm/",ex:"Stay calm and don't panic.",cat:"形容詞"},
+  {w:"comfortable",m:"快適な",p:"/ˈkʌmftəbl/",ex:"This chair is very comfortable.",cat:"形容詞"},
+  {w:"common",m:"共通の、よくある",p:"/ˈkɑːmən/",ex:"Colds are common in winter.",cat:"形容詞"},
+  {w:"confident",m:"自信のある",p:"/ˈkɑːnfɪdənt/",ex:"She is confident in her ability.",cat:"形容詞"},
+  {w:"conscious",m:"意識している",p:"/ˈkɑːnʃəs/",ex:"I'm conscious of the problem.",cat:"形容詞"},
+  {w:"convenient",m:"便利な",p:"/kənˈviːniənt/",ex:"Online shopping is convenient.",cat:"形容詞"},
+  {w:"creative",m:"創造的な",p:"/kriˈeɪtɪv/",ex:"She has creative ideas.",cat:"形容詞"},
+  {w:"curious",m:"好奇心の強い",p:"/ˈkjʊriəs/",ex:"Children are naturally curious.",cat:"形容詞"},
+  {w:"current",m:"現在の",p:"/ˈkɜːrənt/",ex:"The current situation is tough.",cat:"形容詞"},
+  {w:"entire",m:"全体の",p:"/ɪnˈtaɪər/",ex:"The entire class passed.",cat:"形容詞"},
+  {w:"essential",m:"不可欠な",p:"/ɪˈsenʃl/",ex:"Water is essential for life.",cat:"形容詞"},
+  {w:"excellent",m:"素晴らしい",p:"/ˈeksələnt/",ex:"She did an excellent job.",cat:"形容詞"},
+  {w:"familiar",m:"よく知っている、なじみの",p:"/fəˈmɪliər/",ex:"This song sounds familiar.",cat:"形容詞"},
+  {w:"fascinating",m:"魅力的な",p:"/ˈfæsɪneɪtɪŋ/",ex:"The documentary was fascinating.",cat:"形容詞"},
+  {w:"flexible",m:"柔軟な",p:"/ˈfleksəbl/",ex:"A flexible schedule is helpful.",cat:"形容詞"},
+  {w:"frequent",m:"頻繁な",p:"/ˈfriːkwənt/",ex:"Buses are frequent in Tokyo.",cat:"形容詞"},
+  {w:"generous",m:"気前の良い、寛大な",p:"/ˈdʒenərəs/",ex:"She is very generous.",cat:"形容詞"},
+  {w:"gentle",m:"穏やかな、優しい",p:"/ˈdʒentl/",ex:"He has a gentle personality.",cat:"形容詞"},
+  {w:"global",m:"世界的な",p:"/ˈɡloʊbl/",ex:"Global warming is a serious issue.",cat:"形容詞"},
+  {w:"grateful",m:"感謝している",p:"/ˈɡreɪtfl/",ex:"I'm grateful for your help.",cat:"形容詞"},
+  {w:"harmful",m:"有害な",p:"/ˈhɑːrmfl/",ex:"Smoking is harmful to health.",cat:"形容詞"},
+  {w:"honest",m:"正直な",p:"/ˈɑːnɪst/",ex:"Be honest with me.",cat:"形容詞"},
+  {w:"ideal",m:"理想的な",p:"/aɪˈdiːəl/",ex:"It's the ideal solution.",cat:"形容詞"},
+  {w:"immediate",m:"即座の",p:"/ɪˈmiːdiət/",ex:"We need an immediate response.",cat:"形容詞"},
+  {w:"individual",m:"個々の",p:"/ˌɪndɪˈvɪdʒuəl/",ex:"Each individual has unique talents.",cat:"形容詞"},
+  {w:"local",m:"地元の",p:"/ˈloʊkl/",ex:"Support local businesses.",cat:"形容詞"},
+  {w:"mental",m:"精神の",p:"/ˈmentl/",ex:"Mental health is important.",cat:"形容詞"},
+  {w:"negative",m:"否定的な、マイナスの",p:"/ˈneɡətɪv/",ex:"Don't be so negative.",cat:"形容詞"},
+  {w:"obvious",m:"明らかな",p:"/ˈɑːbviəs/",ex:"The answer is obvious.",cat:"形容詞"},
+  {w:"original",m:"独自の、最初の",p:"/əˈrɪdʒɪnl/",ex:"She has an original style.",cat:"形容詞"},
+  {w:"particular",m:"特定の",p:"/pərˈtɪkjələr/",ex:"Any particular reason?",cat:"形容詞"},
+  {w:"permanent",m:"永久の",p:"/ˈpɜːrmənənt/",ex:"Is this a permanent job?",cat:"形容詞"},
+  {w:"physical",m:"身体の",p:"/ˈfɪzɪkl/",ex:"Physical exercise is important.",cat:"形容詞"},
+  {w:"positive",m:"肯定的な、前向きな",p:"/ˈpɑːzətɪv/",ex:"Stay positive!",cat:"形容詞"},
+  {w:"previous",m:"以前の",p:"/ˈpriːviəs/",ex:"The previous owner moved away.",cat:"形容詞"},
+  {w:"proper",m:"適切な、正しい",p:"/ˈprɑːpər/",ex:"Use proper language.",cat:"形容詞"},
+  {w:"rare",m:"めったにない、珍しい",p:"/rer/",ex:"Rare animals need protection.",cat:"形容詞"},
+  {w:"reasonable",m:"合理的な、手頃な",p:"/ˈriːznəbl/",ex:"The price is reasonable.",cat:"形容詞"},
+  {w:"regular",m:"定期的な、いつもの",p:"/ˈreɡjələr/",ex:"Regular exercise keeps you fit.",cat:"形容詞"},
+  {w:"relevant",m:"関連のある",p:"/ˈreləvənt/",ex:"Is this relevant to our topic?",cat:"形容詞"},
+  {w:"responsible",m:"責任がある",p:"/rɪˈspɑːnsəbl/",ex:"Who is responsible for this?",cat:"形容詞"},
+  {w:"severe",m:"深刻な、厳しい",p:"/sɪˈvɪr/",ex:"The damage was severe.",cat:"形容詞"},
+  {w:"significant",m:"重要な",p:"/sɪɡˈnɪfɪkənt/",ex:"A significant change occurred.",cat:"形容詞"},
+  {w:"slight",m:"わずかな",p:"/slaɪt/",ex:"There was a slight delay.",cat:"形容詞"},
+  {w:"specific",m:"具体的な、特定の",p:"/spəˈsɪfɪk/",ex:"Give me a specific example.",cat:"形容詞"},
+  {w:"sufficient",m:"十分な",p:"/səˈfɪʃnt/",ex:"We have sufficient time.",cat:"形容詞"},
+  {w:"suitable",m:"適した",p:"/ˈsuːtəbl/",ex:"This movie is suitable for children.",cat:"形容詞"},
+  {w:"typical",m:"典型的な",p:"/ˈtɪpɪkl/",ex:"A typical Japanese meal.",cat:"形容詞"},
+  {w:"unique",m:"独特の",p:"/juːˈniːk/",ex:"Everyone is unique.",cat:"形容詞"},
+  {w:"urban",m:"都市の",p:"/ˈɜːrbən/",ex:"Urban areas are crowded.",cat:"形容詞"},
+  {w:"useful",m:"役に立つ",p:"/ˈjuːsfl/",ex:"This tool is very useful.",cat:"形容詞"},
+  {w:"valuable",m:"貴重な",p:"/ˈvæljuəbl/",ex:"Time is valuable.",cat:"形容詞"},
+  {w:"various",m:"さまざまな",p:"/ˈveriəs/",ex:"Various activities are offered.",cat:"形容詞"},
+  {w:"visible",m:"目に見える",p:"/ˈvɪzəbl/",ex:"Stars are visible tonight.",cat:"形容詞"},
+  {w:"wealthy",m:"裕福な",p:"/ˈwelθi/",ex:"He became wealthy through hard work.",cat:"形容詞"},
+  // === 名詞 ===
+  {w:"ability",m:"能力",p:"/əˈbɪləti/",ex:"She has the ability to lead.",cat:"名詞"},
+  {w:"advantage",m:"利点",p:"/ədˈvæntɪdʒ/",ex:"Living near school is an advantage.",cat:"名詞"},
+  {w:"amount",m:"量",p:"/əˈmaʊnt/",ex:"A large amount of water.",cat:"名詞"},
+  {w:"appearance",m:"外見",p:"/əˈpɪrəns/",ex:"Don't judge by appearance.",cat:"名詞"},
+  {w:"attention",m:"注意",p:"/əˈtenʃn/",ex:"Pay attention to the teacher.",cat:"名詞"},
+  {w:"attitude",m:"態度、姿勢",p:"/ˈætɪtuːd/",ex:"A positive attitude is important.",cat:"名詞"},
+  {w:"audience",m:"聴衆、観客",p:"/ˈɔːdiəns/",ex:"The audience was excited.",cat:"名詞"},
+  {w:"behavior",m:"行動、振る舞い",p:"/bɪˈheɪvjər/",ex:"Good behavior is expected.",cat:"名詞"},
+  {w:"benefit",m:"利益、恩恵",p:"/ˈbenɪfɪt/",ex:"Exercise has many benefits.",cat:"名詞"},
+  {w:"budget",m:"予算",p:"/ˈbʌdʒɪt/",ex:"Stay within the budget.",cat:"名詞"},
+  {w:"career",m:"職業、経歴",p:"/kəˈrɪr/",ex:"She has a successful career.",cat:"名詞"},
+  {w:"character",m:"性格、登場人物",p:"/ˈkærɪktər/",ex:"He has a strong character.",cat:"名詞"},
+  {w:"climate",m:"気候",p:"/ˈklaɪmət/",ex:"The climate is changing.",cat:"名詞"},
+  {w:"community",m:"地域社会",p:"/kəˈmjuːnəti/",ex:"Our community is friendly.",cat:"名詞"},
+  {w:"competition",m:"競争、大会",p:"/ˌkɑːmpəˈtɪʃn/",ex:"She won the competition.",cat:"名詞"},
+  {w:"conclusion",m:"結論",p:"/kənˈkluːʒn/",ex:"In conclusion, I agree.",cat:"名詞"},
+  {w:"condition",m:"状態、条件",p:"/kənˈdɪʃn/",ex:"The car is in good condition.",cat:"名詞"},
+  {w:"confidence",m:"自信",p:"/ˈkɑːnfɪdəns/",ex:"She spoke with confidence.",cat:"名詞"},
+  {w:"connection",m:"つながり、接続",p:"/kəˈnekʃn/",ex:"Internet connection is slow.",cat:"名詞"},
+  {w:"consequence",m:"結果",p:"/ˈkɑːnsɪkwens/",ex:"Every action has consequences.",cat:"名詞"},
+  {w:"consumer",m:"消費者",p:"/kənˈsuːmər/",ex:"Consumers want lower prices.",cat:"名詞"},
+  {w:"content",m:"内容、中身",p:"/ˈkɑːntent/",ex:"Check the content of the box.",cat:"名詞"},
+  {w:"context",m:"文脈、背景",p:"/ˈkɑːntekst/",ex:"Understand the word in context.",cat:"名詞"},
+  {w:"contrast",m:"対照、対比",p:"/ˈkɑːntræst/",ex:"The contrast is clear.",cat:"名詞"},
+  {w:"creature",m:"生き物",p:"/ˈkriːtʃər/",ex:"Sea creatures are amazing.",cat:"名詞"},
+  {w:"crisis",m:"危機",p:"/ˈkraɪsɪs/",ex:"The energy crisis is serious.",cat:"名詞"},
+  {w:"custom",m:"習慣、風習",p:"/ˈkʌstəm/",ex:"It's a local custom.",cat:"名詞"},
+  {w:"deadline",m:"締め切り",p:"/ˈdedlaɪn/",ex:"The deadline is tomorrow.",cat:"名詞"},
+  {w:"decision",m:"決定",p:"/dɪˈsɪʒn/",ex:"It was a difficult decision.",cat:"名詞"},
+  {w:"demand",m:"需要、要求",p:"/dɪˈmænd/",ex:"There is a high demand for teachers.",cat:"名詞"},
+  {w:"depression",m:"うつ病、不況",p:"/dɪˈpreʃn/",ex:"He suffered from depression.",cat:"名詞"},
+  {w:"device",m:"装置、機器",p:"/dɪˈvaɪs/",ex:"A useful electronic device.",cat:"名詞"},
+  {w:"disaster",m:"災害",p:"/dɪˈzæstər/",ex:"Natural disasters can be devastating.",cat:"名詞"},
+  {w:"emotion",m:"感情",p:"/ɪˈmoʊʃn/",ex:"Art can express deep emotions.",cat:"名詞"},
+  {w:"environment",m:"環境",p:"/ɪnˈvaɪrənmənt/",ex:"Protect the environment.",cat:"名詞"},
+  {w:"evidence",m:"証拠",p:"/ˈevɪdəns/",ex:"There is no evidence.",cat:"名詞"},
+  {w:"expense",m:"費用",p:"/ɪkˈspens/",ex:"Travel expenses are high.",cat:"名詞"},
+  {w:"experiment",m:"実験",p:"/ɪkˈsperɪmənt/",ex:"They conducted an experiment.",cat:"名詞"},
+  {w:"facility",m:"施設",p:"/fəˈsɪləti/",ex:"The sports facility is new.",cat:"名詞"},
+  {w:"feature",m:"特徴",p:"/ˈfiːtʃər/",ex:"Safety is an important feature.",cat:"名詞"},
+  {w:"fuel",m:"燃料",p:"/ˈfjuːəl/",ex:"Fuel prices are rising.",cat:"名詞"},
+  {w:"generation",m:"世代",p:"/ˌdʒenəˈreɪʃn/",ex:"The younger generation.",cat:"名詞"},
+  {w:"habit",m:"習慣",p:"/ˈhæbɪt/",ex:"Reading is a good habit.",cat:"名詞"},
+  {w:"identity",m:"アイデンティティ、身元",p:"/aɪˈdentəti/",ex:"Protect your online identity.",cat:"名詞"},
+  {w:"impact",m:"影響、衝撃",p:"/ˈɪmpækt/",ex:"Social media has a huge impact.",cat:"名詞"},
+  {w:"income",m:"収入",p:"/ˈɪnkʌm/",ex:"Her income increased.",cat:"名詞"},
+  {w:"industry",m:"産業",p:"/ˈɪndəstri/",ex:"The tourism industry is growing.",cat:"名詞"},
+  {w:"instance",m:"例",p:"/ˈɪnstəns/",ex:"For instance, look at this.",cat:"名詞"},
+  {w:"item",m:"品目、項目",p:"/ˈaɪtəm/",ex:"Check each item on the list.",cat:"名詞"},
+  {w:"material",m:"材料、素材",p:"/məˈtɪriəl/",ex:"What material is this made of?",cat:"名詞"},
+  {w:"method",m:"方法",p:"/ˈmeθəd/",ex:"This method is effective.",cat:"名詞"},
+  {w:"nation",m:"国家",p:"/ˈneɪʃn/",ex:"Many nations signed the agreement.",cat:"名詞"},
+  {w:"opportunity",m:"機会",p:"/ˌɑːpərˈtuːnəti/",ex:"Don't miss this opportunity.",cat:"名詞"},
+  {w:"opinion",m:"意見",p:"/əˈpɪnjən/",ex:"In my opinion, it's a good idea.",cat:"名詞"},
+  {w:"period",m:"期間",p:"/ˈpɪriəd/",ex:"A long period of time.",cat:"名詞"},
+  {w:"pollution",m:"汚染",p:"/pəˈluːʃn/",ex:"Air pollution is a problem.",cat:"名詞"},
+  {w:"population",m:"人口",p:"/ˌpɑːpjuˈleɪʃn/",ex:"The population is growing.",cat:"名詞"},
+  {w:"possibility",m:"可能性",p:"/ˌpɑːsəˈbɪləti/",ex:"There is a possibility of rain.",cat:"名詞"},
+  {w:"pressure",m:"圧力、プレッシャー",p:"/ˈpreʃər/",ex:"She felt a lot of pressure.",cat:"名詞"},
+  {w:"process",m:"過程",p:"/ˈprɑːses/",ex:"The learning process takes time.",cat:"名詞"},
+  {w:"profit",m:"利益",p:"/ˈprɑːfɪt/",ex:"The company made a profit.",cat:"名詞"},
+  {w:"progress",m:"進歩",p:"/ˈprɑːɡres/",ex:"You're making great progress.",cat:"名詞"},
+  {w:"purpose",m:"目的",p:"/ˈpɜːrpəs/",ex:"What is the purpose of this trip?",cat:"名詞"},
+  {w:"quantity",m:"量",p:"/ˈkwɑːntəti/",ex:"Buy in large quantities.",cat:"名詞"},
+  {w:"region",m:"地域",p:"/ˈriːdʒən/",ex:"The region is famous for wine.",cat:"名詞"},
+  {w:"resource",m:"資源",p:"/ˈriːsɔːrs/",ex:"Natural resources are limited.",cat:"名詞"},
+  {w:"role",m:"役割",p:"/roʊl/",ex:"Parents play an important role.",cat:"名詞"},
+  {w:"scene",m:"場面、景色",p:"/siːn/",ex:"The sunset was a beautiful scene.",cat:"名詞"},
+  {w:"solution",m:"解決策",p:"/səˈluːʃn/",ex:"We found a solution.",cat:"名詞"},
+  {w:"source",m:"源、出典",p:"/sɔːrs/",ex:"What is the source of the river?",cat:"名詞"},
+  {w:"species",m:"種",p:"/ˈspiːʃiːz/",ex:"Many species are endangered.",cat:"名詞"},
+  {w:"structure",m:"構造",p:"/ˈstrʌktʃər/",ex:"The structure of the building.",cat:"名詞"},
+  {w:"surface",m:"表面",p:"/ˈsɜːrfɪs/",ex:"The surface of the lake was calm.",cat:"名詞"},
+  {w:"symbol",m:"象徴",p:"/ˈsɪmbl/",ex:"The dove is a symbol of peace.",cat:"名詞"},
+  {w:"task",m:"課題、仕事",p:"/tæsk/",ex:"Complete the task by Friday.",cat:"名詞"},
+  {w:"technique",m:"技術",p:"/tekˈniːk/",ex:"Learn new painting techniques.",cat:"名詞"},
+  {w:"tradition",m:"伝統",p:"/trəˈdɪʃn/",ex:"It's an old tradition.",cat:"名詞"},
+  {w:"trend",m:"傾向、トレンド",p:"/trend/",ex:"Fashion trends change quickly.",cat:"名詞"},
+  {w:"variety",m:"多様性、種類",p:"/vəˈraɪəti/",ex:"A variety of foods is available.",cat:"名詞"},
+  {w:"vehicle",m:"乗り物",p:"/ˈviːɪkl/",ex:"Electric vehicles are popular.",cat:"名詞"},
+  {w:"volunteer",m:"ボランティア",p:"/ˌvɑːlənˈtɪr/",ex:"She works as a volunteer.",cat:"名詞"},
+  // === 副詞・その他 ===
+  {w:"absolutely",m:"絶対に、まったく",p:"/ˌæbsəˈluːtli/",ex:"I absolutely agree.",cat:"副詞・その他"},
+  {w:"actually",m:"実は、実際に",p:"/ˈæktʃuəli/",ex:"Actually, I changed my mind.",cat:"副詞・その他"},
+  {w:"apparently",m:"どうやら〜らしい",p:"/əˈpærəntli/",ex:"Apparently, he moved away.",cat:"副詞・その他"},
+  {w:"approximately",m:"おおよそ",p:"/əˈprɑːksɪmətli/",ex:"Approximately 100 people came.",cat:"副詞・その他"},
+  {w:"barely",m:"かろうじて",p:"/ˈberli/",ex:"I barely passed the test.",cat:"副詞・その他"},
+  {w:"besides",m:"その上、〜に加えて",p:"/bɪˈsaɪdz/",ex:"Besides English, she speaks French.",cat:"副詞・その他"},
+  {w:"constantly",m:"絶えず",p:"/ˈkɑːnstəntli/",ex:"She is constantly studying.",cat:"副詞・その他"},
+  {w:"despite",m:"〜にもかかわらず",p:"/dɪˈspaɪt/",ex:"Despite the rain, we went out.",cat:"副詞・その他"},
+  {w:"entirely",m:"完全に",p:"/ɪnˈtaɪərli/",ex:"I entirely agree with you.",cat:"副詞・その他"},
+  {w:"eventually",m:"最終的に",p:"/ɪˈventʃuəli/",ex:"He eventually succeeded.",cat:"副詞・その他"},
+  {w:"exactly",m:"正確に",p:"/ɪɡˈzæktli/",ex:"That's exactly what I mean.",cat:"副詞・その他"},
+  {w:"extremely",m:"極めて",p:"/ɪkˈstriːmli/",ex:"It was extremely cold.",cat:"副詞・その他"},
+  {w:"fairly",m:"かなり、公平に",p:"/ˈferli/",ex:"The test was fairly easy.",cat:"副詞・その他"},
+  {w:"fortunately",m:"幸いにも",p:"/ˈfɔːrtʃənətli/",ex:"Fortunately, no one was hurt.",cat:"副詞・その他"},
+  {w:"frequently",m:"頻繁に",p:"/ˈfriːkwəntli/",ex:"She frequently visits the library.",cat:"副詞・その他"},
+  {w:"generally",m:"一般的に",p:"/ˈdʒenərəli/",ex:"He is generally kind.",cat:"副詞・その他"},
+  {w:"gradually",m:"徐々に",p:"/ˈɡrædʒuəli/",ex:"The situation gradually improved.",cat:"副詞・その他"},
+  {w:"hardly",m:"ほとんど〜ない",p:"/ˈhɑːrdli/",ex:"I could hardly see anything.",cat:"副詞・その他"},
+  {w:"however",m:"しかしながら",p:"/haʊˈevər/",ex:"However, I disagree.",cat:"副詞・その他"},
+  {w:"indeed",m:"確かに、実に",p:"/ɪnˈdiːd/",ex:"It was indeed a great success.",cat:"副詞・その他"},
+  {w:"instead",m:"代わりに",p:"/ɪnˈsted/",ex:"Let's walk instead of driving.",cat:"副詞・その他"},
+  {w:"merely",m:"単に、ただ〜だけ",p:"/ˈmɪrli/",ex:"I was merely joking.",cat:"副詞・その他"},
+  {w:"nevertheless",m:"それにもかかわらず",p:"/ˌnevərðəˈles/",ex:"It rained; nevertheless, we went.",cat:"副詞・その他"},
+  {w:"otherwise",m:"さもなければ、その他の点では",p:"/ˈʌðərwaɪz/",ex:"Hurry, otherwise you'll be late.",cat:"副詞・その他"},
+  {w:"particularly",m:"特に",p:"/pərˈtɪkjələrli/",ex:"I particularly like this painting.",cat:"副詞・その他"},
+  {w:"perhaps",m:"おそらく",p:"/pərˈhæps/",ex:"Perhaps he forgot.",cat:"副詞・その他"},
+  {w:"properly",m:"適切に",p:"/ˈprɑːpərli/",ex:"The machine is working properly.",cat:"副詞・その他"},
+  {w:"rarely",m:"めったに〜ない",p:"/ˈrerli/",ex:"She rarely eats out.",cat:"副詞・その他"},
+  {w:"recently",m:"最近",p:"/ˈriːsntli/",ex:"I moved here recently.",cat:"副詞・その他"},
+  {w:"regardless",m:"〜に関係なく",p:"/rɪˈɡɑːrdləs/",ex:"Regardless of age, anyone can join.",cat:"副詞・その他"},
+  {w:"slightly",m:"わずかに",p:"/ˈslaɪtli/",ex:"The price increased slightly.",cat:"副詞・その他"},
+  {w:"somewhat",m:"いくぶん",p:"/ˈsʌmwɑːt/",ex:"The movie was somewhat boring.",cat:"副詞・その他"},
+  {w:"therefore",m:"したがって",p:"/ˈðerfɔːr/",ex:"Therefore, we should act now.",cat:"副詞・その他"},
+  {w:"throughout",m:"〜の至るところで、〜の間中",p:"/θruːˈaʊt/",ex:"It rained throughout the day.",cat:"副詞・その他"},
+  {w:"whereas",m:"一方で",p:"/werˈæz/",ex:"I like tea, whereas he likes coffee.",cat:"副詞・その他"},
+  {w:"whether",m:"〜かどうか",p:"/ˈweðər/",ex:"I wonder whether he'll come.",cat:"副詞・その他"},
+  // === 熟語・イディオム ===
+  {w:"according to",m:"〜によると",p:"",ex:"According to the news, it will rain.",cat:"熟語"},
+  {w:"as a result",m:"結果として",p:"",ex:"He studied hard. As a result, he passed.",cat:"熟語"},
+  {w:"as well as",m:"〜と同様に",p:"",ex:"She speaks English as well as French.",cat:"熟語"},
+  {w:"be aware of",m:"〜に気づいている",p:"",ex:"Be aware of the risks.",cat:"熟語"},
+  {w:"be likely to",m:"〜しそうである",p:"",ex:"It is likely to rain tomorrow.",cat:"熟語"},
+  {w:"break out",m:"勃発する",p:"",ex:"A fire broke out at midnight.",cat:"熟語"},
+  {w:"bring about",m:"もたらす、引き起こす",p:"",ex:"Technology brings about change.",cat:"熟語"},
+  {w:"by accident",m:"偶然に",p:"",ex:"I found it by accident.",cat:"熟語"},
+  {w:"carry out",m:"実行する",p:"",ex:"They carried out the plan.",cat:"熟語"},
+  {w:"come across",m:"偶然出会う",p:"",ex:"I came across an old friend.",cat:"熟語"},
+  {w:"come up with",m:"思いつく",p:"",ex:"She came up with a great idea.",cat:"熟語"},
+  {w:"deal with",m:"扱う、対処する",p:"",ex:"How do you deal with stress?",cat:"熟語"},
+  {w:"depend on",m:"〜に頼る、〜次第である",p:"",ex:"It depends on the situation.",cat:"熟語"},
+  {w:"figure out",m:"理解する、解決する",p:"",ex:"I can't figure out this puzzle.",cat:"熟語"},
+  {w:"for instance",m:"例えば",p:"",ex:"For instance, take this case.",cat:"熟語"},
+  {w:"get along with",m:"〜と仲良くする",p:"",ex:"She gets along with everyone.",cat:"熟語"},
+  {w:"get rid of",m:"〜を取り除く",p:"",ex:"Get rid of the old furniture.",cat:"熟語"},
+  {w:"give up",m:"諦める",p:"",ex:"Never give up your dreams.",cat:"熟語"},
+  {w:"hand in",m:"提出する",p:"",ex:"Hand in your homework by Friday.",cat:"熟語"},
+  {w:"in advance",m:"前もって",p:"",ex:"Book in advance to save money.",cat:"熟語"},
+  {w:"in common",m:"共通の",p:"",ex:"We have a lot in common.",cat:"熟語"},
+  {w:"in addition to",m:"〜に加えて",p:"",ex:"In addition to English, she speaks French.",cat:"熟語"},
+  {w:"in order to",m:"〜するために",p:"",ex:"She studied hard in order to pass.",cat:"熟語"},
+  {w:"in spite of",m:"〜にもかかわらず",p:"",ex:"In spite of the rain, we went out.",cat:"熟語"},
+  {w:"in terms of",m:"〜の観点から",p:"",ex:"In terms of cost, it's reasonable.",cat:"熟語"},
+  {w:"instead of",m:"〜の代わりに",p:"",ex:"Use honey instead of sugar.",cat:"熟語"},
+  {w:"keep in touch",m:"連絡を取り続ける",p:"",ex:"Let's keep in touch!",cat:"熟語"},
+  {w:"look forward to",m:"〜を楽しみにする",p:"",ex:"I look forward to seeing you.",cat:"熟語"},
+  {w:"make sense",m:"意味をなす、理にかなう",p:"",ex:"That doesn't make sense.",cat:"熟語"},
+  {w:"make sure",m:"確かめる",p:"",ex:"Make sure to lock the door.",cat:"熟語"},
+  {w:"make up",m:"構成する、作り上げる",p:"",ex:"Women make up 60% of the staff.",cat:"熟語"},
+  {w:"on the other hand",m:"他方では",p:"",ex:"On the other hand, it could be wrong.",cat:"熟語"},
+  {w:"on purpose",m:"わざと",p:"",ex:"He did it on purpose.",cat:"熟語"},
+  {w:"point out",m:"指摘する",p:"",ex:"She pointed out the mistake.",cat:"熟語"},
+  {w:"put off",m:"延期する",p:"",ex:"The meeting was put off.",cat:"熟語"},
+  {w:"refer to",m:"〜に言及する、参照する",p:"",ex:"Refer to the manual for details.",cat:"熟語"},
+  {w:"run out of",m:"〜を使い果たす",p:"",ex:"We ran out of milk.",cat:"熟語"},
+  {w:"stand for",m:"〜を表す、〜を意味する",p:"",ex:"What does UN stand for?",cat:"熟語"},
+  {w:"take advantage of",m:"〜を利用する",p:"",ex:"Take advantage of this opportunity.",cat:"熟語"},
+  {w:"take place",m:"行われる、起こる",p:"",ex:"The event takes place in June.",cat:"熟語"},
+  {w:"turn out",m:"結局〜であるとわかる",p:"",ex:"It turned out to be true.",cat:"熟語"},
+  {w:"used to",m:"以前は〜だった",p:"",ex:"I used to live in Tokyo.",cat:"熟語"},
+];
+
+// ===== STATE =====
+const SK='eiken-pre2-v1';
+const EXAM_DATE=new Date('2026-06-28');
+let state=load();
+let studyMode='all';
+let selCats=new Set();
+let deck=[],idx=0,ok=0,ng=0,wrongList=[];
+let curFilter='all',searchQ='';
+
+function load(){try{const s=localStorage.getItem(SK);if(s)return JSON.parse(s);}catch(e){}return{ws:{},sess:0,tc:0,tw:0};}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
+function getS(w){return state.ws[w]||{status:'new',wc:0,cc:0};}
+
+function getCats(){const c={};WORDS.forEach(w=>{if(!c[w.cat])c[w.cat]={count:0};c[w.cat].count++;});return c;}
+const catIcons={'動詞':'🔵','形容詞':'🟢','名詞':'🟡','副詞・その他':'🟣','熟語':'🔗'};
+
+// ===== COUNTDOWN =====
+function updateCountdown(){
+  const now=new Date();
+  const diff=Math.ceil((EXAM_DATE-now)/(1000*60*60*24));
+  const mastered=WORDS.filter(w=>getS(w.w).status==='mastered').length;
+  const remaining=WORDS.length-mastered;
+  const pace=diff>0?Math.ceil(remaining/diff):0;
+  const el=document.getElementById('countdown-banner');
+  if(diff>0){
+    el.innerHTML=`試験まであと <span class="days">${diff}</span> 日（6月28日）<div class="pace">未マスター ${remaining}語 → 1日約${pace}語ペースで全単語制覇！</div>`;
+  }else if(diff===0){
+    el.innerHTML=`🎯 <span class="days">本日が試験日です！</span> 頑張って！`;
+  }else{
+    el.innerHTML=`試験お疲れさまでした！引き続き学習を続けましょう`;
+  }
+}
+
+// ===== SCREENS =====
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelector(`[data-screen="${name}"]`).classList.add('active');
+  if(name==='home')updateHome();
+  if(name==='wordlist')renderWordList();
+  if(name==='stats')updateStats();
+  updateCountdown();
+}
+
+function updateHome(){
+  let m=0,l=0,n=0;
+  WORDS.forEach(w=>{const s=getS(w.w);if(s.status==='mastered')m++;else if(s.status==='learning')l++;else n++;});
+  document.getElementById('home-total').textContent=`全 ${WORDS.length} 語`;
+  document.getElementById('home-mastered').textContent=`覚えた ${m}`;
+  document.getElementById('home-learning').textContent=`学習中 ${l}`;
+  document.getElementById('home-new').textContent=`未学習 ${n}`;
+  document.getElementById('home-progress').style.width=`${(m/WORDS.length*100).toFixed(1)}%`;
+  renderCats();
+}
+
+function renderCats(){
+  const cats=getCats(),grid=document.getElementById('category-grid');
+  grid.innerHTML='';
+  Object.keys(cats).forEach(cat=>{
+    const d=document.createElement('div');
+    d.className='category-card'+(selCats.has(cat)?' selected':'');
+    d.innerHTML=`<div class="cat-icon">${catIcons[cat]||'📝'}</div><div class="cat-name">${cat}</div><div class="cat-count">${cats[cat].count}語</div>`;
+    d.onclick=()=>{selCats.has(cat)?selCats.delete(cat):selCats.add(cat);renderCats();};
+    grid.appendChild(d);
+  });
+}
+
+function selectMode(m){studyMode=m;document.querySelectorAll('#screen-home .mode-btn').forEach(b=>b.classList.remove('selected'));document.getElementById('mode-'+m).classList.add('selected');}
+
+// ===== STUDY =====
+function startStudy(){
+  let pool=[...WORDS];
+  if(selCats.size>0)pool=pool.filter(w=>selCats.has(w.cat));
+  if(studyMode==='weak')pool=pool.filter(w=>{const s=getS(w.w);return s.status==='learning'||s.wc>0;});
+  else if(studyMode==='new')pool=pool.filter(w=>getS(w.w).status==='new');
+  if(!pool.length){alert('該当する単語がありません');return;}
+  pool.sort((a,b)=>{const sa=getS(a.w),sb=getS(b.w);if(sa.status==='mastered'&&sb.status!=='mastered')return 1;if(sb.status==='mastered'&&sa.status!=='mastered')return -1;return(sb.wc||0)-(sa.wc||0);});
+  deck=pool.slice(0,Math.min(20,pool.length));
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  idx=0;ok=0;ng=0;wrongList=[];
+  showScreen('study');showCard();
+}
+
+function showCard(){
+  if(idx>=deck.length){showResults();return;}
+  const w=deck[idx],s=getS(w.w);
+  document.getElementById('flashcard').classList.remove('flipped');
+  document.getElementById('card-word').textContent=w.w;
+  document.getElementById('card-ph').textContent=w.p;
+  document.getElementById('card-cat').textContent=w.cat;
+  document.getElementById('card-cat2').textContent=w.cat;
+  document.getElementById('card-mean').textContent=w.m;
+  document.getElementById('card-ex').textContent=w.ex;
+  document.getElementById('card-num').textContent=`${idx+1}/${deck.length}`;
+  const b=document.getElementById('card-diff');
+  if(s.wc>=3){b.textContent='苦手';b.className='diff-badge hard';}
+  else if(s.status==='learning'){b.textContent='学習中';b.className='diff-badge medium';}
+  else{b.textContent='NEW';b.className='diff-badge new';}
+  document.getElementById('study-prog').textContent=`${idx+1}/${deck.length}`;
+  document.getElementById('study-ok').textContent=`⭕ ${ok}`;
+  document.getElementById('study-ng').textContent=`❌ ${ng}`;
+  document.getElementById('study-bar').style.width=`${(idx/deck.length*100)}%`;
+}
+
+function flipCard(){document.getElementById('flashcard').classList.toggle('flipped');}
+
+function mark(known){
+  const w=deck[idx];let s=getS(w.w);
+  if(known){ok++;s.cc=(s.cc||0)+1;s.status=s.cc>=3?'mastered':'learning';}
+  else{ng++;s.wc=(s.wc||0)+1;s.status='learning';wrongList.push(w);}
+  state.ws[w.w]=s;save();idx++;setTimeout(showCard,200);
+}
+
+function showResults(){
+  state.sess++;state.tc+=ok;state.tw+=ng;save();
+  const pct=deck.length?Math.round(ok/deck.length*100):0;
+  document.getElementById('res-score').textContent=pct+'%';
+  document.getElementById('res-score').style.color=pct>=80?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';
+  let msg=pct>=90?'素晴らしい！🎉':pct>=70?'よくできました！💪':pct>=50?'苦手を復習しましょう📝':'繰り返し学習が大切🔥';
+  const el=document.getElementById('res-msg');
+  el.textContent=msg;el.style.background=pct>=80?'#dcfce7':pct>=50?'#fef3c7':'#fee2e2';
+  el.style.color=pct>=80?'var(--success)':pct>=50?'#b45309':'var(--danger)';
+  const list=document.getElementById('res-wrong');
+  if(wrongList.length){
+    list.innerHTML='<div class="section-header" style="margin-top:16px">間違えた単語</div>';
+    wrongList.forEach(w=>{list.innerHTML+=`<div class="word-item"><div><div class="wi-word">${w.w}</div><div class="wi-meaning">${w.m}</div></div></div>`;});
+  }else list.innerHTML='';
+  document.getElementById('retry-btn').style.display=wrongList.length?'':'none';
+  showScreen('result');
+}
+
+function retryWrong(){if(!wrongList.length)return;deck=[...wrongList];idx=0;ok=0;ng=0;wrongList=[];showScreen('study');showCard();}
+
+// ===== WORD LIST =====
+function renderWordList(){
+  let f=[...WORDS];
+  if(searchQ)f=f.filter(w=>w.w.toLowerCase().includes(searchQ.toLowerCase())||w.m.includes(searchQ));
+  if(curFilter!=='all')f=f.filter(w=>getS(w.w).status===curFilter);
+  const list=document.getElementById('word-list');list.innerHTML='';
+  f.slice(0,100).forEach(w=>{
+    const s=getS(w.w);
+    const st=s.status==='mastered'?'覚えた':s.status==='learning'?'学習中':'未学習';
+    const sc=s.status==='mastered'?'mastered':s.status==='learning'?'learning':'new';
+    list.innerHTML+=`<li class="word-item"><div><div class="wi-word">${w.w}</div><div class="wi-meaning">${w.m}</div></div><div class="wi-status ${sc}">${st}</div></li>`;
+  });
+  if(f.length>100)list.innerHTML+=`<div style="text-align:center;padding:12px;color:var(--gray);font-size:0.8rem">他 ${f.length-100} 語...</div>`;
+}
+
+function filterWords(q){searchQ=q;renderWordList();}
+function setFilter(f,el){curFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderWordList();}
+
+// ===== STATS =====
+function updateStats(){
+  document.getElementById('s-sess').textContent=state.sess;
+  document.getElementById('s-mast').textContent=WORDS.filter(w=>getS(w.w).status==='mastered').length;
+  const t=state.tc+state.tw;
+  document.getElementById('s-avg').textContent=t>0?Math.round(state.tc/t*100)+'%':'—';
+  const cs=document.getElementById('cat-stats');cs.innerHTML='';
+  const cats=getCats();
+  Object.keys(cats).forEach(cat=>{
+    const words=WORDS.filter(w=>w.cat===cat);
+    const m=words.filter(w=>getS(w.w).status==='mastered').length;
+    const pct=Math.round(m/words.length*100);
+    cs.innerHTML+=`<div style="background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:600;font-size:0.85rem">${catIcons[cat]||'📝'} ${cat}</span><span style="font-size:0.75rem;color:var(--gray)">${m}/${words.length}</span></div><div class="progress-container" style="margin-bottom:0"><div class="progress-fill" style="width:${pct}%;background:${pct>=80?'var(--success)':pct>=50?'var(--warn)':'var(--danger)'}"></div></div></div>`;
+  });
+}
+
+// ===== BACKUP =====
+function exportData(){
+  const data={app:'eiken-pre2',version:1,exportDate:new Date().toISOString(),state:state};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`英検準2級_バックアップ_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.app==='eiken-pre2'&&data.state){
+        state=data.state;save();
+        alert('バックアップを復元しました！');
+        showScreen('home');
+      }else{alert('このファイルは英検準2級アプリのバックアップではありません');}
+    }catch(err){alert('ファイルの読み込みに失敗しました');}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+function showResetModal(){document.getElementById('reset-modal').classList.add('show');}
+function hideModal(){document.getElementById('reset-modal').classList.remove('show');}
+function resetAll(){state={ws:{},sess:0,tc:0,tw:0};save();hideModal();showScreen('home');}
+
+updateHome();updateCountdown();
+</script>
+</body>
+</html>

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>国語 漢字・語彙トレーニング</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--pri:#7c3aed;--pri-light:#ede9fe;--pri-dark:#5b21b6;--success:#16a34a;--danger:#dc2626;--warn:#f59e0b;--gray:#6b7280;--bg:#faf5ff;--shadow:0 4px 24px rgba(0,0,0,0.10)}
+body{font-family:'Hiragino Sans','Meiryo','Segoe UI',sans-serif;background:var(--bg);color:#1e293b;min-height:100vh}
+
+.header{background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff;padding:16px 20px;text-align:center;position:sticky;top:0;z-index:100}
+.header h1{font-size:1.3rem;font-weight:700}
+.header p{font-size:0.8rem;opacity:0.85;margin-top:2px}
+
+.nav-tabs{display:flex;background:#fff;border-bottom:2px solid #e2e8f0;overflow-x:auto}
+.nav-tab{flex:1;padding:12px 8px;text-align:center;font-size:0.85rem;font-weight:600;color:var(--gray);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap;min-width:70px}
+.nav-tab.active{color:var(--pri);border-bottom-color:var(--pri)}
+.nav-tab:hover{background:var(--pri-light)}
+
+.screen{display:none;padding:16px;max-width:600px;margin:0 auto}
+.screen.active{display:block}
+
+.stats-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stat-chip{background:#fff;border-radius:20px;padding:6px 14px;font-size:0.8rem;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.stat-chip.purple{color:var(--pri);border:1.5px solid var(--pri)}
+.stat-chip.green{color:var(--success);border:1.5px solid var(--success)}
+.stat-chip.red{color:var(--danger);border:1.5px solid var(--danger)}
+.stat-chip.orange{color:var(--warn);border:1.5px solid var(--warn)}
+
+.progress-container{background:#e2e8f0;border-radius:12px;height:10px;margin-bottom:20px;overflow:hidden}
+.progress-fill{height:100%;border-radius:12px;background:linear-gradient(90deg,var(--pri),#a78bfa);transition:width 0.4s}
+
+.card-container{perspective:1000px;margin:0 auto 20px;max-width:440px}
+.flashcard{width:100%;min-height:280px;position:relative;cursor:pointer;transform-style:preserve-3d;transition:transform 0.5s;border-radius:20px}
+.flashcard.flipped{transform:rotateY(180deg)}
+.card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;box-shadow:var(--shadow)}
+.card-front{background:linear-gradient(145deg,#fff,#faf5ff);border:2px solid #e9d5ff}
+.card-back{background:linear-gradient(145deg,#ede9fe,#ddd6fe);border:2px solid #a78bfa;transform:rotateY(180deg)}
+.card-category{font-size:0.7rem;color:var(--pri);background:var(--pri-light);padding:3px 10px;border-radius:10px;margin-bottom:12px;font-weight:600}
+.card-word{font-size:2.8rem;font-weight:700;color:#1e293b;margin-bottom:8px;text-align:center}
+.card-reading{font-size:1.1rem;color:var(--gray);margin-bottom:4px}
+.card-meaning{font-size:1.4rem;font-weight:700;color:var(--pri-dark);text-align:center;margin-bottom:8px}
+.card-example{font-size:0.85rem;color:#475569;text-align:center;line-height:1.6;max-width:350px}
+.card-hint{font-size:0.75rem;color:var(--gray);margin-top:16px}
+.card-number{position:absolute;top:12px;right:16px;font-size:0.7rem;color:#94a3b8}
+.diff-badge{position:absolute;top:12px;left:16px;font-size:0.65rem;padding:2px 8px;border-radius:8px;font-weight:600}
+.diff-badge.hard{background:#fee2e2;color:var(--danger)}
+.diff-badge.medium{background:#fef3c7;color:#b45309}
+.diff-badge.new{background:#ede9fe;color:var(--pri)}
+
+.btn-row{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.btn{padding:12px 28px;border:none;border-radius:14px;font-size:0.95rem;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px}
+.btn:active{transform:scale(0.96)}
+.btn-know{background:#dcfce7;color:var(--success)}
+.btn-know:hover{background:#bbf7d0}
+.btn-dont{background:#fee2e2;color:var(--danger)}
+.btn-dont:hover{background:#fecaca}
+.btn-primary{background:var(--pri);color:#fff}
+.btn-primary:hover{background:var(--pri-dark)}
+.btn-secondary{background:#e2e8f0;color:#475569}
+.btn-secondary:hover{background:#cbd5e1}
+.btn-sm{padding:8px 16px;font-size:0.8rem;border-radius:10px}
+
+.category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.category-card{background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:14px;text-align:center;cursor:pointer;transition:all 0.2s}
+.category-card:hover{border-color:var(--pri);background:var(--pri-light)}
+.category-card.selected{border-color:var(--pri);background:var(--pri-light)}
+.cat-icon{font-size:1.5rem;margin-bottom:4px}
+.cat-name{font-size:0.8rem;font-weight:600}
+.cat-count{font-size:0.7rem;color:var(--gray)}
+
+.mode-selector{display:flex;gap:10px;margin-bottom:20px}
+.mode-btn{flex:1;padding:14px;background:#fff;border:2px solid #e2e8f0;border-radius:14px;text-align:center;cursor:pointer;transition:all 0.2s}
+.mode-btn:hover{border-color:var(--pri)}
+.mode-btn.selected{border-color:var(--pri);background:var(--pri-light)}
+.mode-icon{font-size:1.8rem;margin-bottom:6px}
+.mode-name{font-size:0.85rem;font-weight:700}
+.mode-desc{font-size:0.7rem;color:var(--gray);margin-top:2px}
+
+.section-header{font-size:1.1rem;font-weight:700;margin-bottom:12px;color:#1e293b}
+.section-sub{font-size:0.8rem;color:var(--gray);margin-bottom:16px}
+
+.result-card{background:#fff;border-radius:20px;padding:30px;text-align:center;box-shadow:var(--shadow);margin-bottom:20px}
+.result-score{font-size:3rem;font-weight:800}
+.result-label{font-size:1rem;color:var(--gray);margin-top:4px}
+.result-message{font-size:1.1rem;font-weight:600;margin-top:16px;padding:12px;border-radius:12px}
+
+.search-box{width:100%;padding:10px 16px;border:2px solid #e2e8f0;border-radius:12px;font-size:0.9rem;margin-bottom:16px;outline:none}
+.search-box:focus{border-color:var(--pri)}
+
+.filter-chips{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;transition:all 0.2s}
+.filter-chip.active{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+.word-item{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#fff;border-radius:12px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);cursor:pointer;transition:all 0.2s}
+.word-item:hover{background:var(--pri-light)}
+.wi-word{font-weight:700;font-size:1.1rem}
+.wi-sub{font-size:0.8rem;color:var(--gray)}
+.wi-status{font-size:0.7rem;padding:3px 8px;border-radius:8px;font-weight:600}
+.wi-status.mastered{background:#dcfce7;color:var(--success)}
+.wi-status.learning{background:#fef3c7;color:#b45309}
+.wi-status.new{background:#ede9fe;color:var(--pri)}
+
+/* Quiz mode */
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;max-width:440px;margin-left:auto;margin-right:auto}
+.quiz-opt{padding:14px;background:#fff;border:2px solid #e2e8f0;border-radius:14px;text-align:center;cursor:pointer;font-size:1rem;font-weight:600;transition:all 0.2s}
+.quiz-opt:hover{border-color:var(--pri);background:var(--pri-light)}
+.quiz-opt.correct{border-color:var(--success);background:#dcfce7;color:var(--success)}
+.quiz-opt.wrong{border-color:var(--danger);background:#fee2e2;color:var(--danger)}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:20px;padding:30px;max-width:360px;width:90%;text-align:center}
+.modal h3{margin-bottom:10px}
+.modal p{font-size:0.85rem;color:var(--gray);margin-bottom:20px}
+
+/* Typing input */
+.typing-input{width:80%;max-width:300px;padding:12px 16px;border:2px solid #e2e8f0;border-radius:14px;font-size:1.2rem;text-align:center;outline:none;margin-top:12px}
+.typing-input:focus{border-color:var(--pri)}
+.typing-feedback{margin-top:10px;font-size:0.9rem;font-weight:600;min-height:24px}
+
+@media(max-width:480px){.card-word{font-size:2.2rem}.flashcard{min-height:240px}.btn{padding:10px 20px;font-size:0.85rem}.quiz-options{grid-template-columns:1fr}}
+@keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:slideIn 0.3s ease}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>国語 漢字・語彙トレーニング</h1>
+  <p>美大入試 国語対策 — 漢字・四字熟語・慣用句・評論語</p>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" data-screen="home" onclick="showScreen('home')">🏠 ホーム</div>
+  <div class="nav-tab" data-screen="study" onclick="showScreen('study')">📖 学習</div>
+  <div class="nav-tab" data-screen="wordlist" onclick="showScreen('wordlist')">📋 一覧</div>
+  <div class="nav-tab" data-screen="stats" onclick="showScreen('stats')">📊 成績</div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="stats-bar">
+    <div class="stat-chip purple" id="home-total">全 0 語</div>
+    <div class="stat-chip green" id="home-mastered">覚えた 0</div>
+    <div class="stat-chip orange" id="home-learning">学習中 0</div>
+    <div class="stat-chip red" id="home-new">未学習 0</div>
+  </div>
+  <div class="progress-container"><div class="progress-fill" id="home-progress" style="width:0%"></div></div>
+
+  <div class="section-header">学習モードを選択</div>
+  <div class="mode-selector">
+    <div class="mode-btn selected" onclick="selectMode('all')" id="mode-all">
+      <div class="mode-icon">📚</div><div class="mode-name">全問題</div><div class="mode-desc">全範囲から出題</div>
+    </div>
+    <div class="mode-btn" onclick="selectMode('weak')" id="mode-weak">
+      <div class="mode-icon">🔥</div><div class="mode-name">苦手特訓</div><div class="mode-desc">間違えた問題を重点的に</div>
+    </div>
+    <div class="mode-btn" onclick="selectMode('new')" id="mode-new">
+      <div class="mode-icon">✨</div><div class="mode-name">未学習</div><div class="mode-desc">まだ見ていない問題</div>
+    </div>
+  </div>
+
+  <div class="section-header">出題形式</div>
+  <div class="mode-selector">
+    <div class="mode-btn selected" onclick="selectQuizType('card')" id="qtype-card">
+      <div class="mode-icon">🃏</div><div class="mode-name">カード</div><div class="mode-desc">めくって確認</div>
+    </div>
+    <div class="mode-btn" onclick="selectQuizType('quiz')" id="qtype-quiz">
+      <div class="mode-icon">🎯</div><div class="mode-name">4択クイズ</div><div class="mode-desc">選択肢から回答</div>
+    </div>
+    <div class="mode-btn" onclick="selectQuizType('typing')" id="qtype-typing">
+      <div class="mode-icon">⌨️</div><div class="mode-name">入力式</div><div class="mode-desc">読みをタイピング</div>
+    </div>
+  </div>
+
+  <div class="section-header">カテゴリを選択</div>
+  <div class="section-sub">学習したいカテゴリをタップ（複数選択可）</div>
+  <div class="category-grid" id="category-grid"></div>
+
+  <div style="text-align:center;margin-top:20px">
+    <button class="btn btn-primary" onclick="startStudy()" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px">学習スタート 🚀</button>
+  </div>
+</div>
+
+<!-- STUDY -->
+<div id="screen-study" class="screen">
+  <div class="stats-bar">
+    <div class="stat-chip purple" id="study-progress-text">0 / 0</div>
+    <div class="stat-chip green" id="study-correct">⭕ 0</div>
+    <div class="stat-chip red" id="study-wrong">❌ 0</div>
+  </div>
+  <div class="progress-container"><div class="progress-fill" id="study-progress-bar" style="width:0%"></div></div>
+
+  <!-- Card mode -->
+  <div id="card-mode">
+    <div class="card-container">
+      <div class="flashcard" id="flashcard" onclick="flipCard()">
+        <div class="card-face card-front">
+          <div class="diff-badge new" id="card-diff">NEW</div>
+          <div class="card-number" id="card-number">1/20</div>
+          <div class="card-category" id="card-cat">カテゴリ</div>
+          <div class="card-word" id="card-word">漢字</div>
+          <div class="card-hint">タップして答えを確認 →</div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-category" id="card-cat-back">カテゴリ</div>
+          <div class="card-reading" id="card-reading">よみがな</div>
+          <div class="card-meaning" id="card-meaning">意味</div>
+          <div class="card-example" id="card-example">例文</div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row" id="card-btns">
+      <button class="btn btn-dont" onclick="markWord(false)">❌ まだ</button>
+      <button class="btn btn-know" onclick="markWord(true)">⭕ 覚えた！</button>
+    </div>
+  </div>
+
+  <!-- Quiz mode -->
+  <div id="quiz-mode" style="display:none">
+    <div style="text-align:center;margin-bottom:8px">
+      <div class="card-category" id="quiz-cat" style="display:inline-block">カテゴリ</div>
+    </div>
+    <div style="text-align:center;margin-bottom:4px">
+      <span style="font-size:0.8rem;color:var(--gray)" id="quiz-prompt">この漢字の読みは？</span>
+    </div>
+    <div style="text-align:center">
+      <div class="card-word" id="quiz-word" style="font-size:2.8rem;margin:12px 0">漢字</div>
+    </div>
+    <div class="quiz-options" id="quiz-options"></div>
+    <div class="btn-row" id="quiz-next-btn" style="display:none;margin-top:16px">
+      <button class="btn btn-primary" onclick="nextQuizQuestion()">次の問題 →</button>
+    </div>
+  </div>
+
+  <!-- Typing mode -->
+  <div id="typing-mode" style="display:none">
+    <div style="text-align:center;margin-bottom:8px">
+      <div class="card-category" id="typing-cat" style="display:inline-block">カテゴリ</div>
+    </div>
+    <div style="text-align:center;margin-bottom:4px">
+      <span style="font-size:0.8rem;color:var(--gray)" id="typing-prompt">この漢字の読みをひらがなで入力</span>
+    </div>
+    <div style="text-align:center">
+      <div class="card-word" id="typing-word" style="font-size:2.8rem;margin:12px 0">漢字</div>
+      <input type="text" class="typing-input" id="typing-input" placeholder="ひらがなで入力..." autocomplete="off">
+      <div class="typing-feedback" id="typing-feedback"></div>
+    </div>
+    <div class="btn-row" id="typing-btns" style="margin-top:12px">
+      <button class="btn btn-primary" onclick="checkTyping()">回答する</button>
+    </div>
+    <div class="btn-row" id="typing-next-btn" style="display:none;margin-top:12px">
+      <button class="btn btn-primary" onclick="nextTypingQuestion()">次の問題 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-card animate-in">
+    <div class="result-score" id="result-score">0%</div>
+    <div class="result-label">正答率</div>
+    <div class="result-message" id="result-message"></div>
+  </div>
+  <div id="result-wrong-list"></div>
+  <div class="btn-row" style="margin-top:20px">
+    <button class="btn btn-secondary" onclick="showScreen('home')">🏠 ホーム</button>
+    <button class="btn btn-primary" onclick="retryWrong()" id="retry-btn">🔥 間違えた問題を復習</button>
+  </div>
+</div>
+
+<!-- WORD LIST -->
+<div id="screen-wordlist" class="screen">
+  <input type="text" class="search-box" placeholder="🔍 漢字・読み・意味を検索..." oninput="filterWords(this.value)">
+  <div class="filter-chips">
+    <div class="filter-chip active" onclick="setFilter('all',this)">すべて</div>
+    <div class="filter-chip" onclick="setFilter('mastered',this)">✅ 覚えた</div>
+    <div class="filter-chip" onclick="setFilter('learning',this)">📝 学習中</div>
+    <div class="filter-chip" onclick="setFilter('new',this)">🆕 未学習</div>
+  </div>
+  <div id="word-list"></div>
+</div>
+
+<!-- STATS -->
+<div id="screen-stats" class="screen">
+  <div class="section-header">学習統計</div>
+  <div class="result-card">
+    <div style="display:flex;justify-content:space-around;text-align:center">
+      <div><div style="font-size:2rem;font-weight:800;color:var(--pri)" id="stat-sessions">0</div><div style="font-size:0.75rem;color:var(--gray)">学習回数</div></div>
+      <div><div style="font-size:2rem;font-weight:800;color:var(--success)" id="stat-mastered">0</div><div style="font-size:0.75rem;color:var(--gray)">覚えた</div></div>
+      <div><div style="font-size:2rem;font-weight:800;color:var(--warn)" id="stat-avg">0%</div><div style="font-size:0.75rem;color:var(--gray)">平均正答率</div></div>
+    </div>
+  </div>
+  <div class="section-header" style="margin-top:20px">カテゴリ別進捗</div>
+  <div id="category-stats"></div>
+  <!-- Backup section -->
+  <div class="backup-section" style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.08);margin-top:20px">
+    <h3 style="font-size:0.95rem;margin-bottom:12px">💾 データのバックアップ・復元</h3>
+    <p style="font-size:0.8rem;color:var(--gray);margin-bottom:12px">学習進捗をファイルに保存できます。ブラウザのデータが消えても安心！</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary btn-sm" onclick="exportData()">📥 バックアップ保存</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()">📤 バックアップ復元</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:20px">
+    <button class="btn btn-secondary btn-sm" onclick="showResetModal()">🗑️ データをリセット</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal">
+    <h3>データをリセットしますか？</h3>
+    <p>すべての学習進捗がリセットされます。</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="hideResetModal()">キャンセル</button>
+      <button class="btn btn-dont" onclick="resetAll()">リセット</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== WORD DATABASE =====
+// w=表記, r=読み, m=意味, ex=例文, cat=カテゴリ, q=出題(問い), a=答え
+const WORDS = [
+  // ========== 漢字の読み（頻出） ==========
+  {w:"憂鬱",r:"ゆううつ",m:"気持ちが沈んで晴れないこと",ex:"梅雨の時期は憂鬱になりがちだ",cat:"漢字の読み"},
+  {w:"曖昧",r:"あいまい",m:"はっきりしないこと",ex:"曖昧な返事をする",cat:"漢字の読み"},
+  {w:"顕著",r:"けんちょ",m:"はっきりと目立つこと",ex:"環境問題の影響が顕著に表れている",cat:"漢字の読み"},
+  {w:"恣意",r:"しい",m:"自分勝手な考え",ex:"恣意的な判断は避けるべきだ",cat:"漢字の読み"},
+  {w:"逼迫",r:"ひっぱく",m:"余裕がなく差し迫ること",ex:"財政が逼迫している",cat:"漢字の読み"},
+  {w:"貪欲",r:"どんよく",m:"非常に欲が深いこと",ex:"知識に対して貪欲な姿勢",cat:"漢字の読み"},
+  {w:"齟齬",r:"そご",m:"食い違い、ずれ",ex:"意見に齟齬が生じた",cat:"漢字の読み"},
+  {w:"杜撰",r:"ずさん",m:"いい加減で粗雑なこと",ex:"杜撰な管理体制が問題になった",cat:"漢字の読み"},
+  {w:"忖度",r:"そんたく",m:"他人の気持ちを推し量ること",ex:"上司の意向を忖度する",cat:"漢字の読み"},
+  {w:"瑕疵",r:"かし",m:"きず、欠点",ex:"契約に瑕疵があった",cat:"漢字の読み"},
+  {w:"畏怖",r:"いふ",m:"おそれおののくこと",ex:"自然に対する畏怖の念",cat:"漢字の読み"},
+  {w:"乖離",r:"かいり",m:"そむき離れること",ex:"理想と現実が乖離している",cat:"漢字の読み"},
+  {w:"弊害",r:"へいがい",m:"害になること",ex:"長時間労働の弊害が指摘されている",cat:"漢字の読み"},
+  {w:"拘泥",r:"こうでい",m:"こだわること",ex:"形式に拘泥してはいけない",cat:"漢字の読み"},
+  {w:"奢侈",r:"しゃし",m:"分不相応なぜいたく",ex:"奢侈な生活を戒める",cat:"漢字の読み"},
+  {w:"剽窃",r:"ひょうせつ",m:"他人の文章などを盗用すること",ex:"論文の剽窃は許されない",cat:"漢字の読み"},
+  {w:"蓋然性",r:"がいぜんせい",m:"たぶんそうであろうという可能性",ex:"蓋然性が高い仮説だ",cat:"漢字の読み"},
+  {w:"措置",r:"そち",m:"事態に応じて取る手段",ex:"緊急措置を講じる",cat:"漢字の読み"},
+  {w:"遵守",r:"じゅんしゅ",m:"規則などに従い守ること",ex:"法律を遵守する義務がある",cat:"漢字の読み"},
+  {w:"脆弱",r:"ぜいじゃく",m:"もろくて弱いこと",ex:"システムの脆弱性を改善する",cat:"漢字の読み"},
+  {w:"凡庸",r:"ぼんよう",m:"平凡でとりえのないこと",ex:"凡庸な作品に終わった",cat:"漢字の読み"},
+  {w:"敷衍",r:"ふえん",m:"意味を広げてわかりやすく説明すること",ex:"具体例を挙げて敷衍する",cat:"漢字の読み"},
+  {w:"喧伝",r:"けんでん",m:"盛んに言いふらすこと",ex:"マスメディアで喧伝された",cat:"漢字の読み"},
+  {w:"慣習",r:"かんしゅう",m:"ならわし、しきたり",ex:"地域の慣習を尊重する",cat:"漢字の読み"},
+  {w:"漸次",r:"ぜんじ",m:"しだいに、だんだんと",ex:"状況は漸次改善されている",cat:"漢字の読み"},
+  {w:"惹起",r:"じゃっき",m:"事件などを引き起こすこと",ex:"社会問題を惹起する",cat:"漢字の読み"},
+  {w:"嗜好",r:"しこう",m:"好み、たしなみ",ex:"個人の嗜好は様々だ",cat:"漢字の読み"},
+  {w:"享受",r:"きょうじゅ",m:"受け入れて自分のものにすること",ex:"文化的利益を享受する",cat:"漢字の読み"},
+  {w:"荘厳",r:"そうごん",m:"おごそかで威厳があること",ex:"荘厳な雰囲気の寺院",cat:"漢字の読み"},
+  {w:"矜持",r:"きょうじ",m:"誇り、プライド",ex:"職人としての矜持を持つ",cat:"漢字の読み"},
+  {w:"示唆",r:"しさ",m:"それとなく示すこと",ex:"研究結果が多くのことを示唆している",cat:"漢字の読み"},
+  {w:"刹那",r:"せつな",m:"きわめて短い時間",ex:"刹那的な快楽に溺れる",cat:"漢字の読み"},
+  {w:"恬淡",r:"てんたん",m:"無欲であっさりしていること",ex:"名誉に恬淡とした人物",cat:"漢字の読み"},
+  {w:"泰然",r:"たいぜん",m:"落ち着いて動じないさま",ex:"泰然自若としている",cat:"漢字の読み"},
+  {w:"邁進",r:"まいしん",m:"恐れず突き進むこと",ex:"目標に向かって邁進する",cat:"漢字の読み"},
+  // ========== 漢字の書き（読み→漢字） ==========
+  {w:"きょうい",r:"脅威",m:"おびやかすこと、脅かす力",ex:"地球温暖化は人類への（キョウイ）だ",cat:"漢字の書き"},
+  {w:"けいちょう",r:"傾聴",m:"耳を傾けて熱心に聞くこと",ex:"相手の意見を（ケイチョウ）する",cat:"漢字の書き"},
+  {w:"ほうかつ",r:"包括",m:"全体をひとまとめにすること",ex:"（ホウカツ）的な政策を打ち出す",cat:"漢字の書き"},
+  {w:"きゅうめい",r:"究明",m:"物事の真相を明らかにすること",ex:"事故原因の（キュウメイ）に全力をあげる",cat:"漢字の書き"},
+  {w:"しんちょう",r:"慎重",m:"注意深くて軽々しく行動しないこと",ex:"（シンチョウ）に判断する必要がある",cat:"漢字の書き"},
+  {w:"ゆうずう",r:"融通",m:"滞りなく通じること、やりくり",ex:"（ユウズウ）の利く対応をする",cat:"漢字の書き"},
+  {w:"こうけん",r:"貢献",m:"力を尽くして役立つこと",ex:"社会に（コウケン）する",cat:"漢字の書き"},
+  {w:"ちくせき",r:"蓄積",m:"たくわえ積むこと",ex:"長年の経験を（チクセキ）する",cat:"漢字の書き"},
+  {w:"じゅうなん",r:"柔軟",m:"やわらかくしなやかなこと",ex:"（ジュウナン）な発想が求められる",cat:"漢字の書き"},
+  {w:"いちじるしい",r:"著しい",m:"はっきりわかるほど目立つ",ex:"技術の進歩が（イチジルシイ）",cat:"漢字の書き"},
+  {w:"つちかう",r:"培う",m:"育て養うこと",ex:"創造力を（ツチカウ）",cat:"漢字の書き"},
+  {w:"はぐくむ",r:"育む",m:"大切に育てる",ex:"豊かな感性を（ハグクム）",cat:"漢字の書き"},
+  {w:"おもんぱかる",r:"慮る",m:"よく考える、思いやる",ex:"相手の立場を（オモンパカル）",cat:"漢字の書き"},
+  {w:"あがなう",r:"贖う",m:"罪をつぐなう、代金を払って手に入れる",ex:"罪を（アガナウ）",cat:"漢字の書き"},
+  {w:"かえりみる",r:"顧みる",m:"過去を振り返る、気にかける",ex:"自らの行いを（カエリミル）",cat:"漢字の書き"},
+  {w:"うったえる",r:"訴える",m:"裁判にかける、強く主張する",ex:"平和を（ウッタエル）",cat:"漢字の書き"},
+  {w:"こうちく",r:"構築",m:"組み立てて作ること",ex:"信頼関係を（コウチク）する",cat:"漢字の書き"},
+  {w:"はいりょ",r:"配慮",m:"心を配ること",ex:"環境への（ハイリョ）が必要だ",cat:"漢字の書き"},
+  {w:"きばん",r:"基盤",m:"物事の土台となるもの",ex:"経済の（キバン）を強化する",cat:"漢字の書き"},
+  {w:"しょうちょう",r:"象徴",m:"抽象的なものを具体的なもので表すこと",ex:"平和の（ショウチョウ）としてのハト",cat:"漢字の書き"},
+  // ========== 四字熟語 ==========
+  {w:"一期一会",r:"いちごいちえ",m:"一生に一度の出会いを大切にすること",ex:"茶道の精神である一期一会の心構え",cat:"四字熟語"},
+  {w:"以心伝心",r:"いしんでんしん",m:"言葉を使わなくても気持ちが通じ合うこと",ex:"長年の付き合いで以心伝心の仲だ",cat:"四字熟語"},
+  {w:"温故知新",r:"おんこちしん",m:"古いことを調べて新しい知識を得ること",ex:"温故知新の精神で学ぶ",cat:"四字熟語"},
+  {w:"起死回生",r:"きしかいせい",m:"絶望的な状態から立ち直ること",ex:"起死回生の一打を放った",cat:"四字熟語"},
+  {w:"試行錯誤",r:"しこうさくご",m:"失敗を重ねながら解決策を見つけること",ex:"試行錯誤の末に完成した作品",cat:"四字熟語"},
+  {w:"取捨選択",r:"しゅしゃせんたく",m:"必要なものを選び不要なものを捨てること",ex:"情報の取捨選択が大切だ",cat:"四字熟語"},
+  {w:"針小棒大",r:"しんしょうぼうだい",m:"小さなことを大げさに言うこと",ex:"針小棒大に騒ぎ立てる",cat:"四字熟語"},
+  {w:"朝令暮改",r:"ちょうれいぼかい",m:"命令や方針がすぐに変わること",ex:"朝令暮改では部下がついてこない",cat:"四字熟語"},
+  {w:"切磋琢磨",r:"せっさたくま",m:"互いに励まし合って向上すること",ex:"仲間と切磋琢磨して成長する",cat:"四字熟語"},
+  {w:"日進月歩",r:"にっしんげっぽ",m:"日々絶えず進歩すること",ex:"テクノロジーは日進月歩だ",cat:"四字熟語"},
+  {w:"本末転倒",r:"ほんまつてんとう",m:"大事なことと些細なことが入れ替わること",ex:"手段が目的化するのは本末転倒だ",cat:"四字熟語"},
+  {w:"唯一無二",r:"ゆいいつむに",m:"たった一つで他に並ぶものがないこと",ex:"唯一無二の存在感を放つ作品",cat:"四字熟語"},
+  {w:"臨機応変",r:"りんきおうへん",m:"状況に応じて適切に対応すること",ex:"臨機応変な判断力が求められる",cat:"四字熟語"},
+  {w:"自画自賛",r:"じがじさん",m:"自分で自分をほめること",ex:"自画自賛はほどほどにしよう",cat:"四字熟語"},
+  {w:"異口同音",r:"いくどうおん",m:"多くの人が同じことを言うこと",ex:"異口同音に賛成した",cat:"四字熟語"},
+  {w:"言語道断",r:"ごんごどうだん",m:"言葉で言い表せないほどひどいこと",ex:"そのような行為は言語道断だ",cat:"四字熟語"},
+  {w:"千差万別",r:"せんさばんべつ",m:"さまざまに異なること",ex:"人の価値観は千差万別だ",cat:"四字熟語"},
+  {w:"五里霧中",r:"ごりむちゅう",m:"方向や見通しが全く立たないこと",ex:"交渉は五里霧中の状態だ",cat:"四字熟語"},
+  {w:"付和雷同",r:"ふわらいどう",m:"主体性なく他人の意見に同調すること",ex:"付和雷同せず自分の意見を持つ",cat:"四字熟語"},
+  {w:"不撓不屈",r:"ふとうふくつ",m:"どんな困難にもくじけないこと",ex:"不撓不屈の精神で挑む",cat:"四字熟語"},
+  {w:"厚顔無恥",r:"こうがんむち",m:"あつかましくて恥知らずなこと",ex:"厚顔無恥な態度に呆れた",cat:"四字熟語"},
+  {w:"森羅万象",r:"しんらばんしょう",m:"宇宙に存在するすべてのもの",ex:"森羅万象を描き出す芸術",cat:"四字熟語"},
+  {w:"空前絶後",r:"くうぜんぜつご",m:"前例もなく今後もありえないこと",ex:"空前絶後の大記録",cat:"四字熟語"},
+  {w:"質実剛健",r:"しつじつごうけん",m:"飾り気がなく心身ともに強いこと",ex:"質実剛健な校風",cat:"四字熟語"},
+  {w:"独立独歩",r:"どくりつどっぽ",m:"他に頼らず自分の力で進むこと",ex:"独立独歩の精神で道を切り開く",cat:"四字熟語"},
+  // ========== 慣用句・ことわざ ==========
+  {w:"青天の霹靂",r:"せいてんのへきれき",m:"突然起こる予想外の出来事",ex:"社長の辞任は青天の霹靂だった",cat:"慣用句"},
+  {w:"目から鱗が落ちる",r:"めからうろこがおちる",m:"あることがきっかけで急に物事がよくわかるようになる",ex:"先生の説明で目から鱗が落ちた",cat:"慣用句"},
+  {w:"敷居が高い",r:"しきいがたかい",m:"不義理などがあって行きにくい",ex:"ご無沙汰しすぎて敷居が高い",cat:"慣用句"},
+  {w:"情けは人の為ならず",r:"なさけはひとのためならず",m:"人に親切にすれば巡り巡って自分に返ってくる",ex:"情けは人の為ならず、と言うように助け合おう",cat:"慣用句"},
+  {w:"他山の石",r:"たざんのいし",m:"他人の失敗を自分の戒めにすること",ex:"彼の失敗を他山の石とする",cat:"慣用句"},
+  {w:"骨折り損のくたびれ儲け",r:"ほねおりぞんのくたびれもうけ",m:"苦労しただけで何の成果もないこと",ex:"結局、骨折り損のくたびれ儲けに終わった",cat:"慣用句"},
+  {w:"灯台下暗し",r:"とうだいもとくらし",m:"身近なことはかえってわかりにくい",ex:"灯台下暗しで、答えはすぐそばにあった",cat:"慣用句"},
+  {w:"二の足を踏む",r:"にのあしをふむ",m:"ためらって決断できないこと",ex:"費用がかかるので二の足を踏んでいる",cat:"慣用句"},
+  {w:"袖振り合うも多生の縁",r:"そでふりあうもたしょうのえん",m:"ちょっとした出会いも前世からの縁",ex:"袖振り合うも多生の縁で、大切にしたい",cat:"慣用句"},
+  {w:"虎の威を借る狐",r:"とらのいをかるきつね",m:"力のある者の権威を借りて威張ること",ex:"虎の威を借る狐のような態度だ",cat:"慣用句"},
+  {w:"覆水盆に返らず",r:"ふくすいぼんにかえらず",m:"一度してしまったことは取り返しがつかない",ex:"覆水盆に返らず、後悔しても遅い",cat:"慣用句"},
+  {w:"的を射る",r:"まとをいる",m:"的確に要点をつく",ex:"彼の指摘は的を射ている",cat:"慣用句"},
+  {w:"木を見て森を見ず",r:"きをみてもりをみず",m:"細部にとらわれて全体を見失うこと",ex:"木を見て森を見ずの議論になっている",cat:"慣用句"},
+  {w:"一石二鳥",r:"いっせきにちょう",m:"一つの行動で二つの利益を得ること",ex:"散歩は健康にもよく気分転換にもなり一石二鳥だ",cat:"慣用句"},
+  {w:"豚に真珠",r:"ぶたにしんじゅ",m:"価値のわからない者に貴重なものを与えること",ex:"彼にこの絵を見せても豚に真珠だ",cat:"慣用句"},
+  {w:"弘法にも筆の誤り",r:"こうぼうにもふでのあやまり",m:"名人でも失敗することがある",ex:"弘法にも筆の誤りで、プロでもミスはある",cat:"慣用句"},
+  {w:"石の上にも三年",r:"いしのうえにもさんねん",m:"辛抱強く続ければ成功する",ex:"石の上にも三年、諦めずに続けよう",cat:"慣用句"},
+  {w:"急がば回れ",r:"いそがばまわれ",m:"急ぐときほど安全な道を選べ",ex:"急がば回れで、基礎から学び直した",cat:"慣用句"},
+  {w:"能ある鷹は爪を隠す",r:"のうあるたかはつめをかくす",m:"実力のある者はみだりにそれを誇示しない",ex:"能ある鷹は爪を隠すタイプの人だ",cat:"慣用句"},
+  {w:"塵も積もれば山となる",r:"ちりもつもればやまとなる",m:"わずかなものでも積み重なれば大きくなる",ex:"毎日の練習が大切。塵も積もれば山となる",cat:"慣用句"},
+  // ========== 評論・小論文キーワード ==========
+  {w:"二項対立",r:"にこうたいりつ",m:"二つの概念を対立させて考える方法",ex:"自然と人工の二項対立で論じる",cat:"評論キーワード"},
+  {w:"逆説",r:"ぎゃくせつ",m:"一見矛盾しているが真理を含む表現",ex:"「急がば回れ」は逆説的な表現だ",cat:"評論キーワード"},
+  {w:"止揚",r:"しよう",m:"対立する二つの概念を統合し高次の段階に至ること（アウフヘーベン）",ex:"弁証法における止揚の概念",cat:"評論キーワード"},
+  {w:"捨象",r:"しゃしょう",m:"ある要素を切り捨てて考えること（抽象の対）",ex:"個別の事情を捨象して一般化する",cat:"評論キーワード"},
+  {w:"普遍",r:"ふへん",m:"すべてのものに共通すること",ex:"普遍的な価値観とは何か",cat:"評論キーワード"},
+  {w:"相対化",r:"そうたいか",m:"絶対的でなく他との比較で捉えること",ex:"自文化を相対化する視点が必要だ",cat:"評論キーワード"},
+  {w:"恣意的",r:"しいてき",m:"論理的根拠なく自分勝手に判断すること",ex:"恣意的な解釈は避けるべきだ",cat:"評論キーワード"},
+  {w:"還元",r:"かんげん",m:"元に戻すこと、単純な要素で説明すること",ex:"文化を経済に還元して論じることの問題",cat:"評論キーワード"},
+  {w:"形骸化",r:"けいがいか",m:"本来の意義が失われ形だけが残ること",ex:"制度が形骸化している",cat:"評論キーワード"},
+  {w:"画一化",r:"かくいつか",m:"すべてを同じ型にすること",ex:"教育の画一化に対する批判",cat:"評論キーワード"},
+  {w:"帰結",r:"きけつ",m:"最終的な結果、結論",ex:"その議論の論理的な帰結として",cat:"評論キーワード"},
+  {w:"暗黙知",r:"あんもくち",m:"言語化できない経験的な知識",ex:"職人の技は暗黙知に支えられている",cat:"評論キーワード"},
+  {w:"共時的",r:"きょうじてき",m:"同じ時代の横断的な視点",ex:"共時的な比較と通時的な分析",cat:"評論キーワード"},
+  {w:"通時的",r:"つうじてき",m:"時間の流れに沿った縦断的な視点",ex:"言語の通時的変化を研究する",cat:"評論キーワード"},
+  {w:"弁証法",r:"べんしょうほう",m:"対立する命題の統合により真理に至る方法",ex:"ヘーゲルの弁証法",cat:"評論キーワード"},
+  {w:"アイデンティティ",r:"あいでんてぃてぃ",m:"自分が自分であるという意識、自己同一性",ex:"アイデンティティの確立が課題だ",cat:"評論キーワード"},
+  {w:"パラダイム",r:"ぱらだいむ",m:"ある時代の支配的な考え方の枠組み",ex:"パラダイムの転換が求められている",cat:"評論キーワード"},
+  {w:"コンテクスト",r:"こんてくすと",m:"文脈、背景",ex:"コンテクストを踏まえて解釈する",cat:"評論キーワード"},
+  {w:"ジレンマ",r:"じれんま",m:"どちらを選んでも困難な二者択一",ex:"経済成長と環境保護のジレンマ",cat:"評論キーワード"},
+  {w:"メタファー",r:"めたふぁー",m:"隠喩、あるものを別のもので表す比喩",ex:"「人生は旅だ」はメタファーの一例",cat:"評論キーワード"},
+  {w:"アナロジー",r:"あなろじー",m:"類推、類似性に基づく推論",ex:"アナロジーを用いて説明する",cat:"評論キーワード"},
+  {w:"イデオロギー",r:"いでおろぎー",m:"社会的・政治的な思想体系",ex:"特定のイデオロギーに偏らない",cat:"評論キーワード"},
+  {w:"レトリック",r:"れとりっく",m:"効果的な表現の技法、修辞法",ex:"巧みなレトリックを駆使した文章",cat:"評論キーワード"},
+  {w:"コンセンサス",r:"こんせんさす",m:"意見の一致、合意",ex:"社会的コンセンサスを得る必要がある",cat:"評論キーワード"},
+  {w:"リテラシー",r:"りてらしー",m:"情報を正しく読み解き活用する能力",ex:"メディアリテラシーを高める",cat:"評論キーワード"},
+  // ========== 美術・デザイン関連語彙 ==========
+  {w:"造形",r:"ぞうけい",m:"形を作ること、美術における形の創造",ex:"造形的な美しさを追求する",cat:"美術・デザイン"},
+  {w:"審美",r:"しんび",m:"美を深く見極めること",ex:"審美眼を養うことが大切だ",cat:"美術・デザイン"},
+  {w:"抽象",r:"ちゅうしょう",m:"共通する性質を抜き出すこと",ex:"抽象的な表現に挑戦する",cat:"美術・デザイン"},
+  {w:"具象",r:"ぐしょう",m:"具体的な形として表すこと",ex:"具象画から抽象画への変遷",cat:"美術・デザイン"},
+  {w:"意匠",r:"いしょう",m:"デザイン、物の外観の工夫",ex:"独創的な意匠を凝らす",cat:"美術・デザイン"},
+  {w:"構図",r:"こうず",m:"画面の中での配置やバランス",ex:"構図を工夫して作品に動きを出す",cat:"美術・デザイン"},
+  {w:"色彩",r:"しきさい",m:"色の総称、色合い",ex:"色彩豊かな作品",cat:"美術・デザイン"},
+  {w:"質感",r:"しつかん",m:"材質から受ける感じ",ex:"金属の質感を表現する",cat:"美術・デザイン"},
+  {w:"遠近法",r:"えんきんほう",m:"奥行きを表現する技法",ex:"遠近法を用いて空間を描く",cat:"美術・デザイン"},
+  {w:"様式",r:"ようしき",m:"ある時代や流派に共通する表現の型",ex:"ゴシック様式の建築",cat:"美術・デザイン"},
+  {w:"前衛",r:"ぜんえい",m:"芸術で革新的・実験的な立場",ex:"前衛芸術の運動が広がった",cat:"美術・デザイン"},
+  {w:"写実",r:"しゃじつ",m:"対象をありのままに描写すること",ex:"写実的な描写力を磨く",cat:"美術・デザイン"},
+  {w:"素描",r:"そびょう",m:"デッサン、線描きの下絵",ex:"素描の技術を基礎から学ぶ",cat:"美術・デザイン"},
+  {w:"諧調",r:"かいちょう",m:"色や音のバランスの取れた調和",ex:"明暗の諧調を美しく表現する",cat:"美術・デザイン"},
+  {w:"陰影",r:"いんえい",m:"光と影",ex:"陰影をつけて立体感を出す",cat:"美術・デザイン"},
+  // ========== 頻出同音異義語 ==========
+  {w:"異義 vs 異議",r:"いぎ",m:"異義＝違う意味 ／ 異議＝反対意見",ex:"異義語に注意｜異議を申し立てる",cat:"同音異義語"},
+  {w:"意志 vs 意思",r:"いし",m:"意志＝何かをしようとする強い気持ち ／ 意思＝考え・思い",ex:"強い意志を持つ｜意思を確認する",cat:"同音異義語"},
+  {w:"過程 vs 課程",r:"かてい",m:"過程＝物事の進行の道筋 ／ 課程＝学習の順序・コース",ex:"成長の過程｜教育課程を修了する",cat:"同音異義語"},
+  {w:"機構 vs 機巧",r:"きこう",m:"機構＝組織の仕組み ／ 機巧＝巧みなからくり",ex:"行政機構の改革｜機巧を凝らした装置",cat:"同音異義語"},
+  {w:"対象 vs 対照 vs 対称",r:"たいしょう",m:"対象＝目標・相手 ／ 対照＝比べ合わせ ／ 対称＝つり合い",ex:"研究対象｜対照的な二人｜左右対称",cat:"同音異義語"},
+  {w:"保障 vs 保証 vs 補償",r:"ほしょう",m:"保障＝守り保つ ／ 保証＝間違いないと請け合う ／ 補償＝損害を埋め合わせる",ex:"安全保障｜品質保証｜損害補償",cat:"同音異義語"},
+  {w:"制作 vs 製作",r:"せいさく",m:"制作＝芸術作品を作る ／ 製作＝実用品を作る",ex:"映画を制作する｜部品を製作する",cat:"同音異義語"},
+  {w:"鑑賞 vs 観賞",r:"かんしょう",m:"鑑賞＝芸術作品を味わう ／ 観賞＝目で見て楽しむ",ex:"絵画を鑑賞する｜花を観賞する",cat:"同音異義語"},
+  {w:"追求 vs 追及 vs 追究",r:"ついきゅう",m:"追求＝追い求める ／ 追及＝追い詰めて問いただす ／ 追究＝深く調べる",ex:"利益を追求｜責任を追及｜原因を追究",cat:"同音異義語"},
+  {w:"慣行 vs 刊行 vs 敢行",r:"かんこう",m:"慣行＝習わし ／ 刊行＝出版 ／ 敢行＝思い切って行う",ex:"従来の慣行｜書籍を刊行｜計画を敢行",cat:"同音異義語"},
+  {w:"収集 vs 収拾",r:"しゅうしゅう",m:"収集＝集めること ／ 収拾＝混乱をおさめること",ex:"データを収集する｜事態を収拾する",cat:"同音異義語"},
+  {w:"体制 vs 態勢 vs 体勢",r:"たいせい",m:"体制＝組織の仕組み ／ 態勢＝身構え ／ 体勢＝体の構え",ex:"政治体制｜受け入れ態勢｜不安定な体勢",cat:"同音異義語"},
+];
+
+// ===== STATE =====
+const SK = 'kokugo-vocab-v1';
+let state = load();
+let studyMode = 'all', quizType = 'card';
+let selCats = new Set();
+let deck = [], idx = 0, correct = 0, wrong = 0, wrongList = [];
+let curFilter = 'all', searchQ = '';
+
+function load() { try { const s = localStorage.getItem(SK); if(s) return JSON.parse(s); } catch(e){} return {ws:{},sessions:0,tc:0,tw:0}; }
+function save() { try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e){} }
+function getS(id) { return state.ws[id] || {status:'new',wc:0,cc:0}; }
+function wordId(w) { return w.w + '|' + w.cat; }
+
+function getCats() {
+  const c = {};
+  WORDS.forEach(w => { if(!c[w.cat]) c[w.cat]={count:0}; c[w.cat].count++; });
+  return c;
+}
+const catIcons = {'漢字の読み':'📖','漢字の書き':'✍️','四字熟語':'🀄','慣用句':'💬','評論キーワード':'📐','美術・デザイン':'🎨','同音異義語':'🔀'};
+
+// ===== SCREENS =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelector(`[data-screen="${name}"]`).classList.add('active');
+  if(name==='home') updateHome();
+  if(name==='wordlist') renderWordList();
+  if(name==='stats') updateStats();
+}
+
+function updateHome() {
+  let m=0,l=0,n=0;
+  WORDS.forEach(w => { const s=getS(wordId(w)); if(s.status==='mastered')m++; else if(s.status==='learning')l++; else n++; });
+  document.getElementById('home-total').textContent=`全 ${WORDS.length} 語`;
+  document.getElementById('home-mastered').textContent=`覚えた ${m}`;
+  document.getElementById('home-learning').textContent=`学習中 ${l}`;
+  document.getElementById('home-new').textContent=`未学習 ${n}`;
+  document.getElementById('home-progress').style.width=`${(m/WORDS.length*100).toFixed(1)}%`;
+  renderCats();
+}
+
+function renderCats() {
+  const cats=getCats(), grid=document.getElementById('category-grid');
+  grid.innerHTML='';
+  Object.keys(cats).forEach(cat=>{
+    const d=document.createElement('div');
+    d.className='category-card'+(selCats.has(cat)?' selected':'');
+    d.innerHTML=`<div class="cat-icon">${catIcons[cat]||'📝'}</div><div class="cat-name">${cat}</div><div class="cat-count">${cats[cat].count}語</div>`;
+    d.onclick=()=>{ selCats.has(cat)?selCats.delete(cat):selCats.add(cat); renderCats(); };
+    grid.appendChild(d);
+  });
+}
+
+function selectMode(m) { studyMode=m; document.querySelectorAll('.mode-selector:first-of-type .mode-btn').forEach(b=>b.classList.remove('selected')); document.getElementById('mode-'+m).classList.add('selected'); }
+function selectQuizType(t) { quizType=t; ['card','quiz','typing'].forEach(x=>document.getElementById('qtype-'+x).classList.remove('selected')); document.getElementById('qtype-'+t).classList.add('selected'); }
+
+// ===== STUDY =====
+function startStudy() {
+  let pool=[...WORDS];
+  if(selCats.size>0) pool=pool.filter(w=>selCats.has(w.cat));
+  if(studyMode==='weak') pool=pool.filter(w=>{const s=getS(wordId(w));return s.status==='learning'||s.wc>0;});
+  else if(studyMode==='new') pool=pool.filter(w=>getS(wordId(w)).status==='new');
+  if(!pool.length){alert('該当する問題がありません');return;}
+
+  pool.sort((a,b)=>{const sa=getS(wordId(a)),sb=getS(wordId(b));if(sa.status==='mastered'&&sb.status!=='mastered')return 1;if(sb.status==='mastered'&&sa.status!=='mastered')return -1;return(sb.wc||0)-(sa.wc||0);});
+  deck=pool.slice(0,Math.min(20,pool.length));
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+
+  idx=0;correct=0;wrong=0;wrongList=[];
+  showScreen('study');
+
+  document.getElementById('card-mode').style.display=quizType==='card'?'':'none';
+  document.getElementById('quiz-mode').style.display=quizType==='quiz'?'':'none';
+  document.getElementById('typing-mode').style.display=quizType==='typing'?'':'none';
+
+  showQuestion();
+}
+
+function showQuestion() {
+  if(idx>=deck.length){showResults();return;}
+  const w=deck[idx], s=getS(wordId(w));
+  updateStudyBar();
+
+  if(quizType==='card') showCardQuestion(w,s);
+  else if(quizType==='quiz') showQuizQuestion(w,s);
+  else showTypingQuestion(w,s);
+}
+
+function updateStudyBar() {
+  document.getElementById('study-progress-text').textContent=`${idx+1} / ${deck.length}`;
+  document.getElementById('study-correct').textContent=`⭕ ${correct}`;
+  document.getElementById('study-wrong').textContent=`❌ ${wrong}`;
+  document.getElementById('study-progress-bar').style.width=`${(idx/deck.length*100)}%`;
+}
+
+// Card mode
+function showCardQuestion(w,s) {
+  const card=document.getElementById('flashcard');
+  card.classList.remove('flipped');
+  const isKaki = w.cat==='漢字の書き';
+  document.getElementById('card-word').textContent=isKaki?w.w:w.w;
+  document.getElementById('card-cat').textContent=w.cat;
+  document.getElementById('card-cat-back').textContent=w.cat;
+  document.getElementById('card-reading').textContent=isKaki?'正解：'+w.r:w.r;
+  document.getElementById('card-meaning').textContent=w.m;
+  document.getElementById('card-example').textContent=w.ex;
+  document.getElementById('card-number').textContent=`${idx+1}/${deck.length}`;
+  const badge=document.getElementById('card-diff');
+  if(s.wc>=3){badge.textContent='苦手';badge.className='diff-badge hard';}
+  else if(s.status==='learning'){badge.textContent='学習中';badge.className='diff-badge medium';}
+  else{badge.textContent='NEW';badge.className='diff-badge new';}
+}
+
+function flipCard(){document.getElementById('flashcard').classList.toggle('flipped');}
+
+function markWord(known) {
+  const w=deck[idx], id=wordId(w);
+  let s=getS(id);
+  if(known){correct++;s.cc=(s.cc||0)+1;s.status=s.cc>=3?'mastered':'learning';}
+  else{wrong++;s.wc=(s.wc||0)+1;s.status='learning';wrongList.push(w);}
+  state.ws[id]=s;save();idx++;setTimeout(showQuestion,200);
+}
+
+// Quiz mode
+function showQuizQuestion(w) {
+  const isKaki = w.cat==='漢字の書き';
+  document.getElementById('quiz-cat').textContent=w.cat;
+  document.getElementById('quiz-word').textContent=w.w;
+  document.getElementById('quiz-prompt').textContent=isKaki?'正しい漢字はどれ？':'この漢字の読み・意味は？';
+
+  const correctAnswer = isKaki ? w.r : w.r+'：'+w.m;
+  const others = WORDS.filter(x=>x.cat===w.cat&&wordId(x)!==wordId(w));
+  const shuffled = others.sort(()=>Math.random()-0.5).slice(0,3);
+  const wrongAnswers = shuffled.map(x=>isKaki?x.r:x.r+'：'+x.m);
+  const options = [correctAnswer,...wrongAnswers].sort(()=>Math.random()-0.5);
+
+  const container=document.getElementById('quiz-options');
+  container.innerHTML='';
+  document.getElementById('quiz-next-btn').style.display='none';
+
+  options.forEach(opt=>{
+    const btn=document.createElement('div');
+    btn.className='quiz-opt';
+    btn.textContent=opt;
+    btn.onclick=()=>handleQuizAnswer(btn,opt,correctAnswer,w);
+    container.appendChild(btn);
+  });
+}
+
+function handleQuizAnswer(btn,selected,correctAns,w) {
+  const opts=document.querySelectorAll('.quiz-opt');
+  opts.forEach(o=>{o.style.pointerEvents='none';if(o.textContent===correctAns)o.classList.add('correct');});
+  const id=wordId(w);let s=getS(id);
+  if(selected===correctAns){correct++;s.cc=(s.cc||0)+1;s.status=s.cc>=3?'mastered':'learning';}
+  else{btn.classList.add('wrong');wrong++;s.wc=(s.wc||0)+1;s.status='learning';wrongList.push(w);}
+  state.ws[id]=s;save();
+  document.getElementById('quiz-next-btn').style.display='';
+}
+
+function nextQuizQuestion(){idx++;showQuestion();}
+
+// Typing mode
+function showTypingQuestion(w) {
+  const isKaki = w.cat==='漢字の書き';
+  document.getElementById('typing-cat').textContent=w.cat;
+  document.getElementById('typing-word').textContent=w.w;
+  document.getElementById('typing-prompt').textContent=isKaki?'正しい漢字をひらがなで入力':'読みをひらがなで入力';
+  const input=document.getElementById('typing-input');
+  input.value='';input.disabled=false;input.focus();
+  document.getElementById('typing-feedback').textContent='';
+  document.getElementById('typing-btns').style.display='';
+  document.getElementById('typing-next-btn').style.display='none';
+}
+
+function checkTyping() {
+  const w=deck[idx], input=document.getElementById('typing-input');
+  const answer=input.value.trim();
+  const correctAns=w.cat==='漢字の書き'?w.r:w.r;
+  // Normalize: strip spaces, convert katakana to hiragana
+  const normalize=s=>s.replace(/[\s　]/g,'').replace(/[ァ-ヶ]/g,m=>String.fromCharCode(m.charCodeAt(0)-0x60));
+  const isCorrect=normalize(answer)===normalize(correctAns);
+
+  const fb=document.getElementById('typing-feedback');
+  const id=wordId(w);let s=getS(id);
+
+  if(isCorrect){
+    fb.textContent='⭕ 正解！';fb.style.color='var(--success)';
+    correct++;s.cc=(s.cc||0)+1;s.status=s.cc>=3?'mastered':'learning';
+  }else{
+    fb.innerHTML=`❌ 不正解… 正解は「<b>${correctAns}</b>」（${w.m}）`;fb.style.color='var(--danger)';
+    wrong++;s.wc=(s.wc||0)+1;s.status='learning';wrongList.push(w);
+  }
+  state.ws[id]=s;save();
+  input.disabled=true;
+  document.getElementById('typing-btns').style.display='none';
+  document.getElementById('typing-next-btn').style.display='';
+}
+
+function nextTypingQuestion(){idx++;showQuestion();}
+
+// Listen for Enter key in typing input
+document.getElementById('typing-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkTyping();});
+
+// Results
+function showResults() {
+  state.sessions++;state.tc+=correct;state.tw+=wrong;save();
+  const pct=deck.length>0?Math.round(correct/deck.length*100):0;
+  document.getElementById('result-score').textContent=pct+'%';
+  document.getElementById('result-score').style.color=pct>=80?'var(--success)':pct>=50?'var(--warn)':'var(--danger)';
+  let msg='';
+  if(pct>=90)msg='素晴らしい！この調子です！🎉';
+  else if(pct>=70)msg='よくできました！もう少し！💪';
+  else if(pct>=50)msg='まずまず。苦手を復習しましょう📝';
+  else msg='繰り返し学習が大切です🔥';
+  const el=document.getElementById('result-message');
+  el.textContent=msg;el.style.background=pct>=80?'#dcfce7':pct>=50?'#fef3c7':'#fee2e2';
+  el.style.color=pct>=80?'var(--success)':pct>=50?'#b45309':'var(--danger)';
+
+  const list=document.getElementById('result-wrong-list');
+  if(wrongList.length>0){
+    list.innerHTML='<div class="section-header" style="margin-top:16px">間違えた問題</div>';
+    wrongList.forEach(w=>{
+      list.innerHTML+=`<div class="word-item"><div><div class="wi-word">${w.w}</div><div class="wi-sub">${w.r}：${w.m}</div></div></div>`;
+    });
+  }else list.innerHTML='';
+  document.getElementById('retry-btn').style.display=wrongList.length?'':'none';
+  showScreen('result');
+}
+
+function retryWrong(){if(!wrongList.length)return;deck=[...wrongList];idx=0;correct=0;wrong=0;wrongList=[];showScreen('study');showQuestion();}
+
+// Word list
+function renderWordList() {
+  let filtered=[...WORDS];
+  if(searchQ)filtered=filtered.filter(w=>w.w.includes(searchQ)||w.r.includes(searchQ)||w.m.includes(searchQ));
+  if(curFilter!=='all')filtered=filtered.filter(w=>getS(wordId(w)).status===curFilter);
+  const list=document.getElementById('word-list');list.innerHTML='';
+  filtered.slice(0,120).forEach(w=>{
+    const s=getS(wordId(w));
+    const st=s.status==='mastered'?'覚えた':s.status==='learning'?'学習中':'未学習';
+    const sc=s.status==='mastered'?'mastered':s.status==='learning'?'learning':'new';
+    list.innerHTML+=`<div class="word-item"><div><div class="wi-word">${w.w}</div><div class="wi-sub">${w.r}　${w.m}</div></div><div class="wi-status ${sc}">${st}</div></div>`;
+  });
+  if(filtered.length>120)list.innerHTML+=`<div style="text-align:center;padding:12px;color:var(--gray);font-size:0.8rem">他 ${filtered.length-120} 語...</div>`;
+}
+
+function filterWords(q){searchQ=q;renderWordList();}
+function setFilter(f,el){curFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderWordList();}
+
+// Stats
+function updateStats() {
+  document.getElementById('stat-sessions').textContent=state.sessions;
+  document.getElementById('stat-mastered').textContent=WORDS.filter(w=>getS(wordId(w)).status==='mastered').length;
+  const t=state.tc+state.tw;
+  document.getElementById('stat-avg').textContent=t>0?Math.round(state.tc/t*100)+'%':'—';
+
+  const cs=document.getElementById('category-stats');cs.innerHTML='';
+  const cats=getCats();
+  Object.keys(cats).forEach(cat=>{
+    const words=WORDS.filter(w=>w.cat===cat);
+    const m=words.filter(w=>getS(wordId(w)).status==='mastered').length;
+    const pct=Math.round(m/words.length*100);
+    cs.innerHTML+=`<div style="background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:600;font-size:0.85rem">${catIcons[cat]||'📝'} ${cat}</span><span style="font-size:0.75rem;color:var(--gray)">${m}/${words.length}</span></div><div class="progress-container" style="margin-bottom:0"><div class="progress-fill" style="width:${pct}%;background:${pct>=80?'var(--success)':pct>=50?'var(--warn)':'var(--danger)'}"></div></div></div>`;
+  });
+}
+
+// Backup
+function exportData(){
+  const data={app:'kokugo-vocab',version:1,exportDate:new Date().toISOString(),state:state};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=`国語語彙_バックアップ_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(url);
+}
+function importData(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{const data=JSON.parse(e.target.result);
+      if(data.app==='kokugo-vocab'&&data.state){state=data.state;save();alert('バックアップを復元しました！');showScreen('home');}
+      else{alert('このファイルは国語アプリのバックアップではありません');}
+    }catch(err){alert('ファイルの読み込みに失敗しました');}
+  };
+  reader.readAsText(file);event.target.value='';
+}
+
+function showResetModal(){document.getElementById('reset-modal').classList.add('show');}
+function hideResetModal(){document.getElementById('reset-modal').classList.remove('show');}
+function resetAll(){state={ws:{},sessions:0,tc:0,tw:0};save();hideResetModal();showScreen('home');}
+
+updateHome();
+</script>
+</body>
+</html>

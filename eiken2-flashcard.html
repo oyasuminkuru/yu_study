@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英検2級 単語フラッシュカード</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --primary: #2563eb; --primary-light: #dbeafe; --success: #16a34a;
+    --danger: #dc2626; --warning: #f59e0b; --gray: #6b7280;
+    --bg: #f8fafc; --card-bg: #ffffff; --shadow: 0 4px 24px rgba(0,0,0,0.10);
+  }
+  body { font-family: 'Segoe UI', 'Hiragino Sans', 'Meiryo', sans-serif; background: var(--bg); color: #1e293b; min-height: 100vh; }
+
+  /* Header */
+  .header { background: linear-gradient(135deg, #1e40af, #3b82f6); color: #fff; padding: 16px 20px; text-align: center; position: sticky; top: 0; z-index: 100; }
+  .header h1 { font-size: 1.3rem; font-weight: 700; }
+  .header p { font-size: 0.8rem; opacity: 0.85; margin-top: 2px; }
+
+  /* Navigation tabs */
+  .nav-tabs { display: flex; background: #fff; border-bottom: 2px solid #e2e8f0; overflow-x: auto; }
+  .nav-tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 0.85rem; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; min-width: 80px; }
+  .nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .nav-tab:hover { background: var(--primary-light); }
+
+  /* Screens */
+  .screen { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* Stats bar */
+  .stats-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat-chip { background: #fff; border-radius: 20px; padding: 6px 14px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .stat-chip.blue { color: var(--primary); border: 1.5px solid var(--primary); }
+  .stat-chip.green { color: var(--success); border: 1.5px solid var(--success); }
+  .stat-chip.red { color: var(--danger); border: 1.5px solid var(--danger); }
+  .stat-chip.orange { color: var(--warning); border: 1.5px solid var(--warning); }
+
+  /* Progress bar */
+  .progress-container { background: #e2e8f0; border-radius: 12px; height: 10px; margin-bottom: 20px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 12px; background: linear-gradient(90deg, var(--success), #22c55e); transition: width 0.4s ease; }
+
+  /* Flashcard */
+  .card-container { perspective: 1000px; margin: 0 auto 20px; max-width: 440px; }
+  .flashcard { width: 100%; min-height: 260px; position: relative; cursor: pointer; transform-style: preserve-3d; transition: transform 0.5s ease; border-radius: 20px; }
+  .flashcard.flipped { transform: rotateY(180deg); }
+  .card-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px; box-shadow: var(--shadow); }
+  .card-front { background: linear-gradient(145deg, #ffffff, #f1f5f9); border: 2px solid #e2e8f0; }
+  .card-back { background: linear-gradient(145deg, #eff6ff, #dbeafe); border: 2px solid #93c5fd; transform: rotateY(180deg); }
+  .card-category { font-size: 0.7rem; color: var(--primary); background: var(--primary-light); padding: 3px 10px; border-radius: 10px; margin-bottom: 12px; font-weight: 600; }
+  .card-word { font-size: 2.2rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; text-align: center; }
+  .card-phonetic { font-size: 0.9rem; color: var(--gray); margin-bottom: 8px; }
+  .card-meaning { font-size: 1.5rem; font-weight: 700; color: #1e40af; text-align: center; margin-bottom: 8px; }
+  .card-example { font-size: 0.85rem; color: #475569; text-align: center; line-height: 1.5; max-width: 350px; }
+  .card-hint { font-size: 0.75rem; color: var(--gray); margin-top: 16px; }
+  .card-number { position: absolute; top: 12px; right: 16px; font-size: 0.7rem; color: #94a3b8; }
+  .difficulty-badge { position: absolute; top: 12px; left: 16px; font-size: 0.65rem; padding: 2px 8px; border-radius: 8px; font-weight: 600; }
+  .difficulty-badge.hard { background: #fee2e2; color: var(--danger); }
+  .difficulty-badge.medium { background: #fef3c7; color: #b45309; }
+  .difficulty-badge.new { background: #e0e7ff; color: #4338ca; }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .btn { padding: 12px 28px; border: none; border-radius: 14px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .btn:active { transform: scale(0.96); }
+  .btn-know { background: #dcfce7; color: var(--success); }
+  .btn-know:hover { background: #bbf7d0; }
+  .btn-dont { background: #fee2e2; color: var(--danger); }
+  .btn-dont:hover { background: #fecaca; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { background: #e2e8f0; color: #475569; }
+  .btn-secondary:hover { background: #cbd5e1; }
+  .btn-sm { padding: 8px 16px; font-size: 0.8rem; border-radius: 10px; }
+
+  /* Category selector */
+  .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .category-card { background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .category-card:hover { border-color: var(--primary); background: var(--primary-light); }
+  .category-card.selected { border-color: var(--primary); background: var(--primary-light); }
+  .category-card .cat-icon { font-size: 1.5rem; margin-bottom: 4px; }
+  .category-card .cat-name { font-size: 0.8rem; font-weight: 600; }
+  .category-card .cat-count { font-size: 0.7rem; color: var(--gray); }
+
+  /* Word list */
+  .word-list { list-style: none; }
+  .word-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #fff; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer; transition: all 0.2s; }
+  .word-item:hover { background: var(--primary-light); }
+  .word-item .wi-word { font-weight: 700; font-size: 1rem; }
+  .word-item .wi-meaning { font-size: 0.8rem; color: var(--gray); }
+  .word-item .wi-status { font-size: 0.7rem; padding: 3px 8px; border-radius: 8px; font-weight: 600; }
+  .wi-status.mastered { background: #dcfce7; color: var(--success); }
+  .wi-status.learning { background: #fef3c7; color: #b45309; }
+  .wi-status.new { background: #e0e7ff; color: #4338ca; }
+
+  /* Mode selector */
+  .mode-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+  .mode-btn { flex: 1; padding: 14px; background: #fff; border: 2px solid #e2e8f0; border-radius: 14px; text-align: center; cursor: pointer; transition: all 0.2s; }
+  .mode-btn:hover { border-color: var(--primary); }
+  .mode-btn.selected { border-color: var(--primary); background: var(--primary-light); }
+  .mode-btn .mode-icon { font-size: 1.8rem; margin-bottom: 6px; }
+  .mode-btn .mode-name { font-size: 0.85rem; font-weight: 700; }
+  .mode-btn .mode-desc { font-size: 0.7rem; color: var(--gray); margin-top: 2px; }
+
+  /* Section headers */
+  .section-header { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: #1e293b; }
+  .section-sub { font-size: 0.8rem; color: var(--gray); margin-bottom: 16px; }
+
+  /* Results */
+  .result-card { background: #fff; border-radius: 20px; padding: 30px; text-align: center; box-shadow: var(--shadow); margin-bottom: 20px; }
+  .result-score { font-size: 3rem; font-weight: 800; }
+  .result-label { font-size: 1rem; color: var(--gray); margin-top: 4px; }
+  .result-message { font-size: 1.1rem; font-weight: 600; margin-top: 16px; padding: 12px; border-radius: 12px; }
+
+  /* Search */
+  .search-box { width: 100%; padding: 10px 16px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 0.9rem; margin-bottom: 16px; outline: none; }
+  .search-box:focus { border-color: var(--primary); }
+
+  /* Filter chips */
+  .filter-chips { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-chip { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; transition: all 0.2s; }
+  .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .card-word { font-size: 1.7rem; }
+    .card-meaning { font-size: 1.2rem; }
+    .flashcard { min-height: 220px; }
+    .btn { padding: 10px 20px; font-size: 0.85rem; }
+  }
+
+  /* Animations */
+  @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: slideIn 0.3s ease; }
+
+  /* Reset confirmation */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 20px; padding: 30px; max-width: 360px; width: 90%; text-align: center; }
+  .modal h3 { margin-bottom: 10px; }
+  .modal p { font-size: 0.85rem; color: var(--gray); margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>英検2級 単語フラッシュカード</h1>
+  <p>美大受験 英語対策 — 全600語収録</p>
+</div>
+
+<div class="nav-tabs">
+  <div class="nav-tab active" data-screen="home" onclick="showScreen('home')">🏠 ホーム</div>
+  <div class="nav-tab" data-screen="study" onclick="showScreen('study')">📖 学習</div>
+  <div class="nav-tab" data-screen="wordlist" onclick="showScreen('wordlist')">📋 単語帳</div>
+  <div class="nav-tab" data-screen="stats" onclick="showScreen('stats')">📊 成績</div>
+</div>
+
+<!-- HOME -->
+<div id="screen-home" class="screen active">
+  <div class="stats-bar">
+    <div class="stat-chip blue" id="home-total">全 0 語</div>
+    <div class="stat-chip green" id="home-mastered">覚えた 0</div>
+    <div class="stat-chip orange" id="home-learning">学習中 0</div>
+    <div class="stat-chip red" id="home-new">未学習 0</div>
+  </div>
+  <div class="progress-container"><div class="progress-fill" id="home-progress" style="width:0%"></div></div>
+
+  <div class="section-header">学習モードを選択</div>
+  <div class="mode-selector">
+    <div class="mode-btn selected" onclick="selectMode('all')" id="mode-all">
+      <div class="mode-icon">📚</div>
+      <div class="mode-name">全単語</div>
+      <div class="mode-desc">全単語から出題</div>
+    </div>
+    <div class="mode-btn" onclick="selectMode('weak')" id="mode-weak">
+      <div class="mode-icon">🔥</div>
+      <div class="mode-name">苦手特訓</div>
+      <div class="mode-desc">間違えた単語を重点的に</div>
+    </div>
+    <div class="mode-btn" onclick="selectMode('new')" id="mode-new">
+      <div class="mode-icon">✨</div>
+      <div class="mode-name">未学習</div>
+      <div class="mode-desc">まだ見ていない単語</div>
+    </div>
+  </div>
+
+  <div class="section-header">カテゴリを選択</div>
+  <div class="section-sub">学習したいカテゴリをタップしてください（複数選択可）</div>
+  <div class="category-grid" id="category-grid"></div>
+
+  <div style="text-align:center;margin-top:20px;">
+    <button class="btn btn-primary" onclick="startStudy()" style="width:100%;justify-content:center;font-size:1.1rem;padding:16px;">
+      学習スタート 🚀
+    </button>
+  </div>
+</div>
+
+<!-- STUDY -->
+<div id="screen-study" class="screen">
+  <div class="stats-bar">
+    <div class="stat-chip blue" id="study-progress-text">0 / 0</div>
+    <div class="stat-chip green" id="study-correct">⭕ 0</div>
+    <div class="stat-chip red" id="study-wrong">❌ 0</div>
+  </div>
+  <div class="progress-container"><div class="progress-fill" id="study-progress-bar" style="width:0%"></div></div>
+
+  <div class="card-container">
+    <div class="flashcard" id="flashcard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="difficulty-badge new" id="card-difficulty">NEW</div>
+        <div class="card-number" id="card-number">1 / 20</div>
+        <div class="card-category" id="card-category">カテゴリ</div>
+        <div class="card-word" id="card-word">word</div>
+        <div class="card-phonetic" id="card-phonetic"></div>
+        <div class="card-hint">タップして意味を確認 →</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-category" id="card-category-back">カテゴリ</div>
+        <div class="card-meaning" id="card-meaning">意味</div>
+        <div class="card-example" id="card-example">例文</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row" id="answer-btns">
+    <button class="btn btn-dont" onclick="markWord(false)">❌ まだ覚えていない</button>
+    <button class="btn btn-know" onclick="markWord(true)">⭕ 覚えた！</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="screen-result" class="screen">
+  <div class="result-card animate-in">
+    <div class="result-score" id="result-score">0%</div>
+    <div class="result-label">正答率</div>
+    <div class="result-message" id="result-message"></div>
+  </div>
+  <div id="result-wrong-list"></div>
+  <div class="btn-row" style="margin-top:20px;">
+    <button class="btn btn-secondary" onclick="showScreen('home')">🏠 ホームに戻る</button>
+    <button class="btn btn-primary" onclick="retryWrong()" id="retry-btn">🔥 間違えた単語を復習</button>
+  </div>
+</div>
+
+<!-- WORD LIST -->
+<div id="screen-wordlist" class="screen">
+  <input type="text" class="search-box" placeholder="🔍 単語を検索..." oninput="filterWords(this.value)" id="search-input">
+  <div class="filter-chips">
+    <div class="filter-chip active" onclick="setFilter('all')">すべて</div>
+    <div class="filter-chip" onclick="setFilter('mastered')">✅ 覚えた</div>
+    <div class="filter-chip" onclick="setFilter('learning')">📝 学習中</div>
+    <div class="filter-chip" onclick="setFilter('new')">🆕 未学習</div>
+  </div>
+  <ul class="word-list" id="word-list"></ul>
+</div>
+
+<!-- STATS -->
+<div id="screen-stats" class="screen">
+  <div class="section-header">学習統計</div>
+  <div class="result-card">
+    <div style="display:flex;justify-content:space-around;text-align:center;">
+      <div><div style="font-size:2rem;font-weight:800;color:var(--primary)" id="stat-total-sessions">0</div><div style="font-size:0.75rem;color:var(--gray)">学習回数</div></div>
+      <div><div style="font-size:2rem;font-weight:800;color:var(--success)" id="stat-total-mastered">0</div><div style="font-size:0.75rem;color:var(--gray)">覚えた単語</div></div>
+      <div><div style="font-size:2rem;font-weight:800;color:var(--warning)" id="stat-avg-score">0%</div><div style="font-size:0.75rem;color:var(--gray)">平均正答率</div></div>
+    </div>
+  </div>
+
+  <div class="section-header" style="margin-top:20px;">カテゴリ別進捗</div>
+  <div id="category-stats"></div>
+
+  <div style="text-align:center;margin-top:30px;">
+    <button class="btn btn-secondary btn-sm" onclick="showResetModal()">🗑️ データをリセット</button>
+  </div>
+</div>
+
+<!-- Reset Modal -->
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal">
+    <h3>データをリセットしますか？</h3>
+    <p>すべての学習進捗がリセットされます。この操作は取り消せません。</p>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="hideResetModal()">キャンセル</button>
+      <button class="btn btn-dont" onclick="resetAll()">リセットする</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== WORD DATABASE =====
+const WORDS = [
+  // === 日常生活・一般 ===
+  {w:"abandon",m:"捨てる、見捨てる",p:"/əˈbændən/",ex:"He abandoned his old car.",cat:"動詞・基本"},
+  {w:"absorb",m:"吸収する、夢中にさせる",p:"/əbˈzɔːrb/",ex:"The sponge absorbs water.",cat:"動詞・基本"},
+  {w:"accomplish",m:"成し遂げる",p:"/əˈkɑːmplɪʃ/",ex:"She accomplished her goal.",cat:"動詞・基本"},
+  {w:"accurate",m:"正確な",p:"/ˈækjərət/",ex:"The data is accurate.",cat:"形容詞"},
+  {w:"achieve",m:"達成する",p:"/əˈtʃiːv/",ex:"He achieved great success.",cat:"動詞・基本"},
+  {w:"acknowledge",m:"認める",p:"/əkˈnɑːlɪdʒ/",ex:"She acknowledged her mistake.",cat:"動詞・基本"},
+  {w:"acquire",m:"獲得する",p:"/əˈkwaɪər/",ex:"He acquired new skills.",cat:"動詞・基本"},
+  {w:"adapt",m:"適応する",p:"/əˈdæpt/",ex:"Animals adapt to their environment.",cat:"動詞・基本"},
+  {w:"adequate",m:"十分な、適切な",p:"/ˈædɪkwət/",ex:"The food supply is adequate.",cat:"形容詞"},
+  {w:"admire",m:"称賛する",p:"/ədˈmaɪər/",ex:"I admire her courage.",cat:"動詞・基本"},
+  {w:"adopt",m:"採用する、養子にする",p:"/əˈdɑːpt/",ex:"They adopted a new policy.",cat:"動詞・基本"},
+  {w:"advance",m:"前進する、進歩",p:"/ədˈvæns/",ex:"Technology continues to advance.",cat:"動詞・基本"},
+  {w:"advantage",m:"利点、有利",p:"/ədˈvæntɪdʒ/",ex:"Being tall is an advantage.",cat:"名詞・基本"},
+  {w:"affect",m:"影響を与える",p:"/əˈfekt/",ex:"The weather affects our mood.",cat:"動詞・基本"},
+  {w:"afford",m:"余裕がある",p:"/əˈfɔːrd/",ex:"I can't afford a new car.",cat:"動詞・基本"},
+  {w:"agriculture",m:"農業",p:"/ˈæɡrɪkʌltʃər/",ex:"Agriculture is important for the economy.",cat:"名詞・学術"},
+  {w:"aid",m:"援助、助ける",p:"/eɪd/",ex:"Foreign aid was sent immediately.",cat:"名詞・基本"},
+  {w:"alternative",m:"代替の、選択肢",p:"/ɔːlˈtɜːrnətɪv/",ex:"We need an alternative plan.",cat:"形容詞"},
+  {w:"amaze",m:"驚かせる",p:"/əˈmeɪz/",ex:"The magic trick amazed everyone.",cat:"動詞・基本"},
+  {w:"ambitious",m:"野心的な",p:"/æmˈbɪʃəs/",ex:"She is very ambitious.",cat:"形容詞"},
+  {w:"amount",m:"量、総計",p:"/əˈmaʊnt/",ex:"A large amount of money was spent.",cat:"名詞・基本"},
+  {w:"ancient",m:"古代の",p:"/ˈeɪnʃənt/",ex:"The ancient ruins are beautiful.",cat:"形容詞"},
+  {w:"announce",m:"発表する",p:"/əˈnaʊns/",ex:"They announced the results.",cat:"動詞・基本"},
+  {w:"annual",m:"年一回の",p:"/ˈænjuəl/",ex:"The annual festival is in August.",cat:"形容詞"},
+  {w:"anxious",m:"心配な、不安な",p:"/ˈæŋkʃəs/",ex:"She felt anxious before the exam.",cat:"形容詞"},
+  {w:"appeal",m:"訴える、魅力",p:"/əˈpiːl/",ex:"The idea appeals to young people.",cat:"動詞・基本"},
+  {w:"appreciate",m:"感謝する、鑑賞する",p:"/əˈpriːʃieɪt/",ex:"I appreciate your help.",cat:"動詞・基本"},
+  {w:"approach",m:"近づく、取り組み方",p:"/əˈproʊtʃ/",ex:"We need a new approach.",cat:"動詞・基本"},
+  {w:"appropriate",m:"適切な",p:"/əˈproʊpriət/",ex:"Wear appropriate clothing.",cat:"形容詞"},
+  {w:"approve",m:"承認する",p:"/əˈpruːv/",ex:"The plan was approved.",cat:"動詞・基本"},
+  // === 社会・文化 ===
+  {w:"atmosphere",m:"大気、雰囲気",p:"/ˈætməsfɪr/",ex:"The atmosphere was friendly.",cat:"名詞・学術"},
+  {w:"attach",m:"添付する、つける",p:"/əˈtætʃ/",ex:"Attach the file to the email.",cat:"動詞・基本"},
+  {w:"attempt",m:"試みる",p:"/əˈtempt/",ex:"He attempted to climb the mountain.",cat:"動詞・基本"},
+  {w:"attract",m:"引きつける",p:"/əˈtrækt/",ex:"The museum attracts many visitors.",cat:"動詞・基本"},
+  {w:"authority",m:"権威、当局",p:"/əˈθɔːrəti/",ex:"The authorities investigated the case.",cat:"名詞・学術"},
+  {w:"available",m:"利用できる",p:"/əˈveɪləbl/",ex:"Tickets are available online.",cat:"形容詞"},
+  {w:"awful",m:"ひどい",p:"/ˈɔːfl/",ex:"The weather was awful.",cat:"形容詞"},
+  {w:"barrier",m:"障壁",p:"/ˈbæriər/",ex:"Language is a major barrier.",cat:"名詞・学術"},
+  {w:"behavior",m:"行動、振る舞い",p:"/bɪˈheɪvjər/",ex:"His behavior was unacceptable.",cat:"名詞・基本"},
+  {w:"benefit",m:"利益、恩恵",p:"/ˈbenɪfɪt/",ex:"Exercise has many benefits.",cat:"名詞・基本"},
+  {w:"blame",m:"非難する",p:"/bleɪm/",ex:"Don't blame others for your mistakes.",cat:"動詞・基本"},
+  {w:"boost",m:"高める、後押し",p:"/buːst/",ex:"Coffee boosts your energy.",cat:"動詞・基本"},
+  {w:"border",m:"国境、境界",p:"/ˈbɔːrdər/",ex:"They crossed the border.",cat:"名詞・基本"},
+  {w:"bother",m:"悩ます、気にする",p:"/ˈbɑːðər/",ex:"Don't bother about it.",cat:"動詞・基本"},
+  {w:"brief",m:"簡潔な",p:"/briːf/",ex:"Give me a brief summary.",cat:"形容詞"},
+  {w:"budget",m:"予算",p:"/ˈbʌdʒɪt/",ex:"The budget was reduced.",cat:"名詞・基本"},
+  {w:"burden",m:"負担",p:"/ˈbɜːrdn/",ex:"The tax burden is heavy.",cat:"名詞・学術"},
+  {w:"capable",m:"能力がある",p:"/ˈkeɪpəbl/",ex:"She is capable of leading the team.",cat:"形容詞"},
+  {w:"capacity",m:"容量、能力",p:"/kəˈpæsəti/",ex:"The stadium has a capacity of 50,000.",cat:"名詞・学術"},
+  {w:"career",m:"経歴、職業",p:"/kəˈrɪr/",ex:"She chose a career in art.",cat:"名詞・基本"},
+  // === 環境・科学 ===
+  {w:"carbon",m:"炭素",p:"/ˈkɑːrbən/",ex:"Carbon dioxide causes global warming.",cat:"名詞・科学"},
+  {w:"celebrate",m:"祝う",p:"/ˈselɪbreɪt/",ex:"We celebrated his birthday.",cat:"動詞・基本"},
+  {w:"challenge",m:"挑戦",p:"/ˈtʃælɪndʒ/",ex:"Climate change is a big challenge.",cat:"名詞・基本"},
+  {w:"characteristic",m:"特徴的な、特性",p:"/ˌkærəktəˈrɪstɪk/",ex:"Kindness is her main characteristic.",cat:"名詞・学術"},
+  {w:"circumstances",m:"状況、事情",p:"/ˈsɜːrkəmstænsɪz/",ex:"Under the circumstances, we agreed.",cat:"名詞・学術"},
+  {w:"citizen",m:"市民",p:"/ˈsɪtɪzn/",ex:"Every citizen has the right to vote.",cat:"名詞・基本"},
+  {w:"civilization",m:"文明",p:"/ˌsɪvɪlɪˈzeɪʃn/",ex:"Ancient civilizations fascinate historians.",cat:"名詞・学術"},
+  {w:"claim",m:"主張する",p:"/kleɪm/",ex:"He claims to be innocent.",cat:"動詞・基本"},
+  {w:"climate",m:"気候",p:"/ˈklaɪmət/",ex:"The climate is changing rapidly.",cat:"名詞・科学"},
+  {w:"collapse",m:"崩壊する",p:"/kəˈlæps/",ex:"The building collapsed suddenly.",cat:"動詞・基本"},
+  {w:"colleague",m:"同僚",p:"/ˈkɑːliːɡ/",ex:"My colleague helped me with the report.",cat:"名詞・基本"},
+  {w:"colony",m:"植民地",p:"/ˈkɑːləni/",ex:"The country was once a colony.",cat:"名詞・学術"},
+  {w:"combine",m:"結合する",p:"/kəmˈbaɪn/",ex:"Combine the ingredients well.",cat:"動詞・基本"},
+  {w:"comfortable",m:"快適な",p:"/ˈkʌmftəbl/",ex:"The sofa is very comfortable.",cat:"形容詞"},
+  {w:"command",m:"命令する",p:"/kəˈmænd/",ex:"The officer gave a command.",cat:"動詞・基本"},
+  {w:"commit",m:"犯す、約束する",p:"/kəˈmɪt/",ex:"He committed to the project.",cat:"動詞・基本"},
+  {w:"committee",m:"委員会",p:"/kəˈmɪti/",ex:"The committee made a decision.",cat:"名詞・学術"},
+  {w:"communicate",m:"伝達する",p:"/kəˈmjuːnɪkeɪt/",ex:"We communicate via email.",cat:"動詞・基本"},
+  {w:"community",m:"地域社会",p:"/kəˈmjuːnəti/",ex:"The community came together.",cat:"名詞・基本"},
+  {w:"companion",m:"仲間、連れ",p:"/kəmˈpænjən/",ex:"A dog is a loyal companion.",cat:"名詞・基本"},
+  // === ビジネス・経済 ===
+  {w:"compare",m:"比較する",p:"/kəmˈper/",ex:"Compare the two products.",cat:"動詞・基本"},
+  {w:"compete",m:"競争する",p:"/kəmˈpiːt/",ex:"Companies compete for customers.",cat:"動詞・基本"},
+  {w:"complex",m:"複雑な",p:"/kəmˈpleks/",ex:"The problem is very complex.",cat:"形容詞"},
+  {w:"component",m:"構成要素",p:"/kəmˈpoʊnənt/",ex:"Each component is important.",cat:"名詞・学術"},
+  {w:"concentrate",m:"集中する",p:"/ˈkɑːnsntreɪt/",ex:"Concentrate on your studies.",cat:"動詞・基本"},
+  {w:"concept",m:"概念",p:"/ˈkɑːnsept/",ex:"The concept is hard to understand.",cat:"名詞・学術"},
+  {w:"conclude",m:"結論づける",p:"/kənˈkluːd/",ex:"The study concluded that...",cat:"動詞・基本"},
+  {w:"conduct",m:"行う、指揮する",p:"/kənˈdʌkt/",ex:"They conducted an experiment.",cat:"動詞・基本"},
+  {w:"confidence",m:"自信、信頼",p:"/ˈkɑːnfɪdəns/",ex:"She speaks with confidence.",cat:"名詞・基本"},
+  {w:"confirm",m:"確認する",p:"/kənˈfɜːrm/",ex:"Please confirm your reservation.",cat:"動詞・基本"},
+  {w:"conflict",m:"対立、紛争",p:"/ˈkɑːnflɪkt/",ex:"The conflict lasted for years.",cat:"名詞・学術"},
+  {w:"confuse",m:"混乱させる",p:"/kənˈfjuːz/",ex:"The instructions confused me.",cat:"動詞・基本"},
+  {w:"connect",m:"接続する",p:"/kəˈnekt/",ex:"Connect the cable to the TV.",cat:"動詞・基本"},
+  {w:"conscious",m:"意識している",p:"/ˈkɑːnʃəs/",ex:"She was conscious of the danger.",cat:"形容詞"},
+  {w:"consequence",m:"結果、影響",p:"/ˈkɑːnsɪkwens/",ex:"Every action has consequences.",cat:"名詞・学術"},
+  {w:"conservation",m:"保全、保護",p:"/ˌkɑːnsərˈveɪʃn/",ex:"Wildlife conservation is important.",cat:"名詞・科学"},
+  {w:"considerable",m:"かなりの",p:"/kənˈsɪdərəbl/",ex:"A considerable amount of time was spent.",cat:"形容詞"},
+  {w:"consist",m:"成り立つ",p:"/kənˈsɪst/",ex:"The team consists of five members.",cat:"動詞・基本"},
+  {w:"constant",m:"絶え間ない",p:"/ˈkɑːnstənt/",ex:"There was constant noise.",cat:"形容詞"},
+  {w:"construct",m:"建設する",p:"/kənˈstrʌkt/",ex:"They constructed a new bridge.",cat:"動詞・基本"},
+  // === 健康・医療 ===
+  {w:"consult",m:"相談する",p:"/kənˈsʌlt/",ex:"Consult a doctor if symptoms persist.",cat:"動詞・基本"},
+  {w:"consume",m:"消費する",p:"/kənˈsuːm/",ex:"We consume too much energy.",cat:"動詞・基本"},
+  {w:"contain",m:"含む",p:"/kənˈteɪn/",ex:"The box contains 12 items.",cat:"動詞・基本"},
+  {w:"contemporary",m:"現代の、同時代の",p:"/kənˈtempəreri/",ex:"Contemporary art is fascinating.",cat:"形容詞"},
+  {w:"content",m:"内容、満足して",p:"/ˈkɑːntent/",ex:"She was content with the result.",cat:"名詞・基本"},
+  {w:"contribute",m:"貢献する",p:"/kənˈtrɪbjuːt/",ex:"Everyone should contribute to society.",cat:"動詞・基本"},
+  {w:"controversy",m:"論争",p:"/ˈkɑːntrəvɜːrsi/",ex:"The decision caused controversy.",cat:"名詞・学術"},
+  {w:"convenient",m:"便利な",p:"/kənˈviːniənt/",ex:"Online shopping is convenient.",cat:"形容詞"},
+  {w:"convention",m:"慣習、大会",p:"/kənˈvenʃn/",ex:"Social conventions vary by culture.",cat:"名詞・学術"},
+  {w:"convince",m:"納得させる",p:"/kənˈvɪns/",ex:"She convinced him to stay.",cat:"動詞・基本"},
+  {w:"cooperate",m:"協力する",p:"/koʊˈɑːpəreɪt/",ex:"The countries agreed to cooperate.",cat:"動詞・基本"},
+  {w:"cope",m:"対処する",p:"/koʊp/",ex:"She learned to cope with stress.",cat:"動詞・基本"},
+  {w:"correspond",m:"一致する、文通する",p:"/ˌkɔːrəˈspɑːnd/",ex:"The results correspond to our expectations.",cat:"動詞・基本"},
+  {w:"courage",m:"勇気",p:"/ˈkɜːrɪdʒ/",ex:"It takes courage to speak up.",cat:"名詞・基本"},
+  {w:"crash",m:"衝突する",p:"/kræʃ/",ex:"The car crashed into a wall.",cat:"動詞・基本"},
+  {w:"creature",m:"生き物",p:"/ˈkriːtʃər/",ex:"Sea creatures fascinate scientists.",cat:"名詞・科学"},
+  {w:"crisis",m:"危機",p:"/ˈkraɪsɪs/",ex:"The economic crisis affected millions.",cat:"名詞・学術"},
+  {w:"critical",m:"批判的な、重大な",p:"/ˈkrɪtɪkl/",ex:"This is a critical moment.",cat:"形容詞"},
+  {w:"cruel",m:"残酷な",p:"/ˈkruːəl/",ex:"Animal cruelty is unacceptable.",cat:"形容詞"},
+  {w:"curiosity",m:"好奇心",p:"/ˌkjʊriˈɑːsəti/",ex:"Children have natural curiosity.",cat:"名詞・基本"},
+  // === テクノロジー ===
+  {w:"current",m:"現在の、流れ",p:"/ˈkɜːrənt/",ex:"The current situation is difficult.",cat:"形容詞"},
+  {w:"decade",m:"10年間",p:"/ˈdekeɪd/",ex:"The last decade saw great changes.",cat:"名詞・基本"},
+  {w:"decline",m:"減少する、断る",p:"/dɪˈklaɪn/",ex:"The population is declining.",cat:"動詞・基本"},
+  {w:"defend",m:"守る、弁護する",p:"/dɪˈfend/",ex:"He defended his opinion strongly.",cat:"動詞・基本"},
+  {w:"define",m:"定義する",p:"/dɪˈfaɪn/",ex:"How do you define success?",cat:"動詞・基本"},
+  {w:"delay",m:"遅らせる",p:"/dɪˈleɪ/",ex:"The flight was delayed by two hours.",cat:"動詞・基本"},
+  {w:"deliberate",m:"故意の、慎重な",p:"/dɪˈlɪbərət/",ex:"It was a deliberate decision.",cat:"形容詞"},
+  {w:"demonstrate",m:"実演する、示す",p:"/ˈdemənstreɪt/",ex:"She demonstrated the new technique.",cat:"動詞・基本"},
+  {w:"deny",m:"否定する",p:"/dɪˈnaɪ/",ex:"He denied the accusation.",cat:"動詞・基本"},
+  {w:"depend",m:"頼る、依存する",p:"/dɪˈpend/",ex:"It depends on the weather.",cat:"動詞・基本"},
+  {w:"depression",m:"うつ病、不況",p:"/dɪˈpreʃn/",ex:"The Great Depression affected the world.",cat:"名詞・学術"},
+  {w:"derive",m:"由来する",p:"/dɪˈraɪv/",ex:"The word derives from Latin.",cat:"動詞・基本"},
+  {w:"deserve",m:"値する",p:"/dɪˈzɜːrv/",ex:"You deserve a break.",cat:"動詞・基本"},
+  {w:"desire",m:"欲望、望む",p:"/dɪˈzaɪər/",ex:"She had a strong desire to succeed.",cat:"名詞・基本"},
+  {w:"despite",m:"〜にもかかわらず",p:"/dɪˈspaɪt/",ex:"Despite the rain, we went out.",cat:"前置詞"},
+  {w:"detect",m:"検出する、見つける",p:"/dɪˈtekt/",ex:"The sensor detected movement.",cat:"動詞・基本"},
+  {w:"determine",m:"決定する",p:"/dɪˈtɜːrmɪn/",ex:"We need to determine the cause.",cat:"動詞・基本"},
+  {w:"develop",m:"発展させる",p:"/dɪˈveləp/",ex:"The company developed new software.",cat:"動詞・基本"},
+  {w:"device",m:"装置、機器",p:"/dɪˈvaɪs/",ex:"Electronic devices are everywhere.",cat:"名詞・基本"},
+  {w:"devote",m:"捧げる",p:"/dɪˈvoʊt/",ex:"He devoted his life to science.",cat:"動詞・基本"},
+  // === 教育・学問 ===
+  {w:"diabetes",m:"糖尿病",p:"/ˌdaɪəˈbiːtiːz/",ex:"Diabetes is a serious condition.",cat:"名詞・科学"},
+  {w:"diet",m:"食事、食生活",p:"/ˈdaɪət/",ex:"A balanced diet is important.",cat:"名詞・基本"},
+  {w:"diminish",m:"減少する",p:"/dɪˈmɪnɪʃ/",ex:"The pain gradually diminished.",cat:"動詞・基本"},
+  {w:"disaster",m:"災害",p:"/dɪˈzæstər/",ex:"The earthquake was a disaster.",cat:"名詞・基本"},
+  {w:"discipline",m:"規律、学問分野",p:"/ˈdɪsəplɪn/",ex:"Self-discipline is important.",cat:"名詞・学術"},
+  {w:"discover",m:"発見する",p:"/dɪˈskʌvər/",ex:"Scientists discovered a new species.",cat:"動詞・基本"},
+  {w:"discrimination",m:"差別",p:"/dɪˌskrɪmɪˈneɪʃn/",ex:"Racial discrimination is unacceptable.",cat:"名詞・学術"},
+  {w:"disease",m:"病気",p:"/dɪˈziːz/",ex:"Heart disease is common.",cat:"名詞・科学"},
+  {w:"display",m:"展示する、表示",p:"/dɪˈspleɪ/",ex:"The art was displayed beautifully.",cat:"動詞・基本"},
+  {w:"dispute",m:"論争、争い",p:"/dɪˈspjuːt/",ex:"The dispute was resolved peacefully.",cat:"名詞・学術"},
+  {w:"distinct",m:"明確な、異なる",p:"/dɪˈstɪŋkt/",ex:"The two cultures are distinct.",cat:"形容詞"},
+  {w:"distinguish",m:"区別する",p:"/dɪˈstɪŋɡwɪʃ/",ex:"Can you distinguish the difference?",cat:"動詞・基本"},
+  {w:"distribute",m:"分配する",p:"/dɪˈstrɪbjuːt/",ex:"Food was distributed to the poor.",cat:"動詞・基本"},
+  {w:"diverse",m:"多様な",p:"/dɪˈvɜːrs/",ex:"Tokyo is a diverse city.",cat:"形容詞"},
+  {w:"domestic",m:"国内の、家庭の",p:"/dəˈmestɪk/",ex:"Domestic flights are cheaper.",cat:"形容詞"},
+  {w:"dominant",m:"支配的な",p:"/ˈdɑːmɪnənt/",ex:"English is the dominant language.",cat:"形容詞"},
+  {w:"donate",m:"寄付する",p:"/ˈdoʊneɪt/",ex:"She donated money to charity.",cat:"動詞・基本"},
+  {w:"doubt",m:"疑う、疑い",p:"/daʊt/",ex:"I doubt that's true.",cat:"動詞・基本"},
+  {w:"draft",m:"下書き、草案",p:"/dræft/",ex:"Let me see the first draft.",cat:"名詞・基本"},
+  {w:"dramatic",m:"劇的な",p:"/drəˈmætɪk/",ex:"There was a dramatic change.",cat:"形容詞"},
+  // === More words ===
+  {w:"eager",m:"熱望する",p:"/ˈiːɡər/",ex:"She was eager to learn.",cat:"形容詞"},
+  {w:"economy",m:"経済",p:"/ɪˈkɑːnəmi/",ex:"The economy is growing.",cat:"名詞・学術"},
+  {w:"effective",m:"効果的な",p:"/ɪˈfektɪv/",ex:"The medicine was effective.",cat:"形容詞"},
+  {w:"efficient",m:"効率的な",p:"/ɪˈfɪʃnt/",ex:"The new system is more efficient.",cat:"形容詞"},
+  {w:"eliminate",m:"排除する",p:"/ɪˈlɪmɪneɪt/",ex:"We need to eliminate waste.",cat:"動詞・基本"},
+  {w:"embrace",m:"受け入れる、抱擁する",p:"/ɪmˈbreɪs/",ex:"She embraced the new opportunity.",cat:"動詞・基本"},
+  {w:"emerge",m:"現れる",p:"/ɪˈmɜːrdʒ/",ex:"New leaders emerged from the crisis.",cat:"動詞・基本"},
+  {w:"emotion",m:"感情",p:"/ɪˈmoʊʃn/",ex:"Art expresses deep emotions.",cat:"名詞・基本"},
+  {w:"emphasize",m:"強調する",p:"/ˈemfəsaɪz/",ex:"He emphasized the importance of education.",cat:"動詞・基本"},
+  {w:"employ",m:"雇う、用いる",p:"/ɪmˈplɔɪ/",ex:"The company employs 500 people.",cat:"動詞・基本"},
+  {w:"enable",m:"可能にする",p:"/ɪˈneɪbl/",ex:"Technology enables remote work.",cat:"動詞・基本"},
+  {w:"encounter",m:"遭遇する",p:"/ɪnˈkaʊntər/",ex:"We encountered many difficulties.",cat:"動詞・基本"},
+  {w:"encourage",m:"励ます",p:"/ɪnˈkɜːrɪdʒ/",ex:"Parents encourage their children.",cat:"動詞・基本"},
+  {w:"endure",m:"耐える",p:"/ɪnˈdʊr/",ex:"She endured the pain bravely.",cat:"動詞・基本"},
+  {w:"enormous",m:"巨大な",p:"/ɪˈnɔːrməs/",ex:"The building is enormous.",cat:"形容詞"},
+  {w:"enterprise",m:"企業、事業",p:"/ˈentərpraɪz/",ex:"She started a new enterprise.",cat:"名詞・学術"},
+  {w:"enthusiasm",m:"熱意",p:"/ɪnˈθuːziæzəm/",ex:"He showed great enthusiasm.",cat:"名詞・基本"},
+  {w:"entire",m:"全体の",p:"/ɪnˈtaɪər/",ex:"The entire class participated.",cat:"形容詞"},
+  {w:"environment",m:"環境",p:"/ɪnˈvaɪrənmənt/",ex:"Protect the environment.",cat:"名詞・科学"},
+  {w:"epidemic",m:"流行病",p:"/ˌepɪˈdemɪk/",ex:"The flu epidemic spread quickly.",cat:"名詞・科学"},
+  {w:"equivalent",m:"同等の",p:"/ɪˈkwɪvələnt/",ex:"One dollar is equivalent to 150 yen.",cat:"形容詞"},
+  {w:"era",m:"時代",p:"/ˈɪrə/",ex:"We live in the digital era.",cat:"名詞・学術"},
+  {w:"essential",m:"不可欠な",p:"/ɪˈsenʃl/",ex:"Sleep is essential for health.",cat:"形容詞"},
+  {w:"establish",m:"設立する",p:"/ɪˈstæblɪʃ/",ex:"The company was established in 1990.",cat:"動詞・基本"},
+  {w:"estimate",m:"推定する",p:"/ˈestɪmeɪt/",ex:"We estimate the cost at $1000.",cat:"動詞・基本"},
+  {w:"evaluate",m:"評価する",p:"/ɪˈvæljueɪt/",ex:"Teachers evaluate students' performance.",cat:"動詞・基本"},
+  {w:"eventually",m:"最終的に",p:"/ɪˈventʃuəli/",ex:"He eventually succeeded.",cat:"副詞"},
+  {w:"evidence",m:"証拠",p:"/ˈevɪdəns/",ex:"There is no evidence of wrongdoing.",cat:"名詞・学術"},
+  {w:"evolve",m:"進化する",p:"/ɪˈvɑːlv/",ex:"Species evolve over time.",cat:"動詞・基本"},
+  {w:"examine",m:"調べる、試験する",p:"/ɪɡˈzæmɪn/",ex:"The doctor examined the patient.",cat:"動詞・基本"},
+  {w:"exceed",m:"超える",p:"/ɪkˈsiːd/",ex:"Sales exceeded expectations.",cat:"動詞・基本"},
+  {w:"exception",m:"例外",p:"/ɪkˈsepʃn/",ex:"There are no exceptions to this rule.",cat:"名詞・基本"},
+  {w:"exhibit",m:"展示する",p:"/ɪɡˈzɪbɪt/",ex:"The gallery exhibits modern art.",cat:"動詞・基本"},
+  {w:"expand",m:"拡大する",p:"/ɪkˈspænd/",ex:"The company plans to expand.",cat:"動詞・基本"},
+  {w:"expense",m:"費用",p:"/ɪkˈspens/",ex:"Travel expenses were high.",cat:"名詞・基本"},
+  {w:"expert",m:"専門家",p:"/ˈekspɜːrt/",ex:"She is an expert in biology.",cat:"名詞・基本"},
+  {w:"explode",m:"爆発する",p:"/ɪkˈsploʊd/",ex:"The population exploded in the 20th century.",cat:"動詞・基本"},
+  {w:"exploit",m:"利用する、搾取する",p:"/ɪkˈsplɔɪt/",ex:"They exploited natural resources.",cat:"動詞・基本"},
+  {w:"expose",m:"さらす",p:"/ɪkˈspoʊz/",ex:"The scandal was exposed.",cat:"動詞・基本"},
+  {w:"extend",m:"延長する",p:"/ɪkˈstend/",ex:"They extended the deadline.",cat:"動詞・基本"},
+  {w:"extent",m:"程度、範囲",p:"/ɪkˈstent/",ex:"To what extent do you agree?",cat:"名詞・学術"},
+  {w:"extraordinary",m:"並外れた",p:"/ɪkˈstrɔːrdəneri/",ex:"She has extraordinary talent.",cat:"形容詞"},
+  {w:"extreme",m:"極端な",p:"/ɪkˈstriːm/",ex:"Extreme weather is increasing.",cat:"形容詞"},
+  // === F-G ===
+  {w:"facility",m:"施設",p:"/fəˈsɪləti/",ex:"The sports facility is modern.",cat:"名詞・学術"},
+  {w:"factor",m:"要因",p:"/ˈfæktər/",ex:"Many factors affect health.",cat:"名詞・学術"},
+  {w:"famine",m:"飢饉",p:"/ˈfæmɪn/",ex:"The famine caused widespread suffering.",cat:"名詞・学術"},
+  {w:"fare",m:"運賃",p:"/fer/",ex:"Bus fares have increased.",cat:"名詞・基本"},
+  {w:"fascinate",m:"魅了する",p:"/ˈfæsɪneɪt/",ex:"The topic fascinates me.",cat:"動詞・基本"},
+  {w:"fatal",m:"致命的な",p:"/ˈfeɪtl/",ex:"The accident was fatal.",cat:"形容詞"},
+  {w:"feature",m:"特徴",p:"/ˈfiːtʃər/",ex:"Safety is an important feature.",cat:"名詞・基本"},
+  {w:"federal",m:"連邦の",p:"/ˈfedərəl/",ex:"The federal government passed a law.",cat:"形容詞"},
+  {w:"fiction",m:"小説、フィクション",p:"/ˈfɪkʃn/",ex:"She enjoys reading fiction.",cat:"名詞・基本"},
+  {w:"fierce",m:"激しい、どう猛な",p:"/fɪrs/",ex:"The competition was fierce.",cat:"形容詞"},
+  {w:"flaw",m:"欠陥",p:"/flɔː/",ex:"The plan has a flaw.",cat:"名詞・基本"},
+  {w:"flexible",m:"柔軟な",p:"/ˈfleksəbl/",ex:"We need a flexible schedule.",cat:"形容詞"},
+  {w:"float",m:"浮かぶ",p:"/floʊt/",ex:"The boat floated on the lake.",cat:"動詞・基本"},
+  {w:"flour",m:"小麦粉",p:"/ˈflaʊər/",ex:"Add two cups of flour.",cat:"名詞・基本"},
+  {w:"flourish",m:"繁栄する",p:"/ˈflɜːrɪʃ/",ex:"The business flourished.",cat:"動詞・基本"},
+  {w:"forbid",m:"禁止する",p:"/fərˈbɪd/",ex:"Smoking is forbidden here.",cat:"動詞・基本"},
+  {w:"forecast",m:"予報、予測する",p:"/ˈfɔːrkæst/",ex:"The weather forecast says rain.",cat:"名詞・基本"},
+  {w:"former",m:"前の、かつての",p:"/ˈfɔːrmər/",ex:"He is a former teacher.",cat:"形容詞"},
+  {w:"fortune",m:"運、財産",p:"/ˈfɔːrtʃən/",ex:"He made a fortune in business.",cat:"名詞・基本"},
+  {w:"fossil",m:"化石",p:"/ˈfɑːsl/",ex:"Fossil fuels pollute the air.",cat:"名詞・科学"},
+  {w:"foundation",m:"基盤、財団",p:"/faʊnˈdeɪʃn/",ex:"Education is the foundation of success.",cat:"名詞・学術"},
+  {w:"fragile",m:"壊れやすい",p:"/ˈfrædʒəl/",ex:"Handle with care — it's fragile.",cat:"形容詞"},
+  {w:"framework",m:"枠組み",p:"/ˈfreɪmwɜːrk/",ex:"A legal framework was established.",cat:"名詞・学術"},
+  {w:"frequent",m:"頻繁な",p:"/ˈfriːkwənt/",ex:"Trains are frequent in Tokyo.",cat:"形容詞"},
+  {w:"frustrate",m:"いら立たせる",p:"/ˈfrʌstreɪt/",ex:"The delay frustrated everyone.",cat:"動詞・基本"},
+  {w:"fuel",m:"燃料",p:"/ˈfjuːəl/",ex:"Fuel prices are rising.",cat:"名詞・科学"},
+  {w:"fulfill",m:"果たす、満たす",p:"/fʊlˈfɪl/",ex:"She fulfilled her dream.",cat:"動詞・基本"},
+  {w:"function",m:"機能、働き",p:"/ˈfʌŋkʃn/",ex:"What is the function of this tool?",cat:"名詞・学術"},
+  {w:"fundamental",m:"基本的な",p:"/ˌfʌndəˈmentl/",ex:"These are fundamental principles.",cat:"形容詞"},
+  {w:"generous",m:"寛大な、気前の良い",p:"/ˈdʒenərəs/",ex:"She is very generous.",cat:"形容詞"},
+  // === G-H ===
+  {w:"genuine",m:"本物の",p:"/ˈdʒenjuɪn/",ex:"Is this genuine leather?",cat:"形容詞"},
+  {w:"gesture",m:"身振り",p:"/ˈdʒestʃər/",ex:"A kind gesture means a lot.",cat:"名詞・基本"},
+  {w:"glimpse",m:"ちらりと見ること",p:"/ɡlɪmps/",ex:"I caught a glimpse of the sunset.",cat:"名詞・基本"},
+  {w:"global",m:"世界的な",p:"/ˈɡloʊbl/",ex:"Global warming is a serious issue.",cat:"形容詞"},
+  {w:"govern",m:"統治する",p:"/ˈɡʌvərn/",ex:"Laws govern society.",cat:"動詞・基本"},
+  {w:"gradual",m:"徐々の",p:"/ˈɡrædʒuəl/",ex:"There was a gradual improvement.",cat:"形容詞"},
+  {w:"grant",m:"認める、助成金",p:"/ɡrænt/",ex:"She was granted a scholarship.",cat:"動詞・基本"},
+  {w:"guarantee",m:"保証する",p:"/ˌɡærənˈtiː/",ex:"We guarantee quality.",cat:"動詞・基本"},
+  {w:"guilty",m:"有罪の、罪悪感のある",p:"/ˈɡɪlti/",ex:"He felt guilty about lying.",cat:"形容詞"},
+  {w:"habitat",m:"生息地",p:"/ˈhæbɪtæt/",ex:"Forests are natural habitats for many animals.",cat:"名詞・科学"},
+  {w:"hardship",m:"苦難",p:"/ˈhɑːrdʃɪp/",ex:"They endured many hardships.",cat:"名詞・基本"},
+  {w:"harmony",m:"調和",p:"/ˈhɑːrməni/",ex:"Living in harmony with nature.",cat:"名詞・基本"},
+  {w:"harsh",m:"厳しい",p:"/hɑːrʃ/",ex:"The winter was harsh.",cat:"形容詞"},
+  {w:"hesitate",m:"ためらう",p:"/ˈhezɪteɪt/",ex:"Don't hesitate to ask.",cat:"動詞・基本"},
+  {w:"highlight",m:"強調する、目玉",p:"/ˈhaɪlaɪt/",ex:"The report highlights key issues.",cat:"動詞・基本"},
+  {w:"horizon",m:"地平線",p:"/həˈraɪzn/",ex:"The sun set on the horizon.",cat:"名詞・基本"},
+  {w:"household",m:"世帯、家庭の",p:"/ˈhaʊshoʊld/",ex:"Household expenses are rising.",cat:"名詞・基本"},
+  {w:"humble",m:"謙虚な",p:"/ˈhʌmbl/",ex:"He remained humble despite his success.",cat:"形容詞"},
+  {w:"hypothesis",m:"仮説",p:"/haɪˈpɑːθəsɪs/",ex:"The hypothesis needs to be tested.",cat:"名詞・科学"},
+  // === I-L ===
+  {w:"identify",m:"特定する",p:"/aɪˈdentɪfaɪ/",ex:"Can you identify the problem?",cat:"動詞・基本"},
+  {w:"illustrate",m:"説明する、描く",p:"/ˈɪləstreɪt/",ex:"The chart illustrates the trend.",cat:"動詞・基本"},
+  {w:"immediate",m:"即座の",p:"/ɪˈmiːdiət/",ex:"We need an immediate response.",cat:"形容詞"},
+  {w:"immune",m:"免疫の",p:"/ɪˈmjuːn/",ex:"The immune system protects the body.",cat:"形容詞"},
+  {w:"impact",m:"衝撃、影響",p:"/ˈɪmpækt/",ex:"Pollution has a huge impact.",cat:"名詞・学術"},
+  {w:"implement",m:"実施する",p:"/ˈɪmplɪment/",ex:"The plan was implemented successfully.",cat:"動詞・基本"},
+  {w:"imply",m:"暗示する",p:"/ɪmˈplaɪ/",ex:"What does this data imply?",cat:"動詞・基本"},
+  {w:"impose",m:"課す",p:"/ɪmˈpoʊz/",ex:"New taxes were imposed.",cat:"動詞・基本"},
+  {w:"impress",m:"感銘を与える",p:"/ɪmˈpres/",ex:"Her speech impressed everyone.",cat:"動詞・基本"},
+  {w:"incredible",m:"信じられない",p:"/ɪnˈkredəbl/",ex:"The view was incredible.",cat:"形容詞"},
+  {w:"independent",m:"独立した",p:"/ˌɪndɪˈpendənt/",ex:"She became financially independent.",cat:"形容詞"},
+  {w:"indicate",m:"示す",p:"/ˈɪndɪkeɪt/",ex:"Research indicates a connection.",cat:"動詞・基本"},
+  {w:"individual",m:"個人の、個人",p:"/ˌɪndɪˈvɪdʒuəl/",ex:"Each individual is unique.",cat:"名詞・学術"},
+  {w:"industrial",m:"産業の",p:"/ɪnˈdʌstriəl/",ex:"The industrial revolution changed the world.",cat:"形容詞"},
+  {w:"inevitable",m:"避けられない",p:"/ɪnˈevɪtəbl/",ex:"Change is inevitable.",cat:"形容詞"},
+  {w:"infant",m:"幼児",p:"/ˈɪnfənt/",ex:"Infant mortality has decreased.",cat:"名詞・基本"},
+  {w:"influence",m:"影響、影響する",p:"/ˈɪnfluəns/",ex:"Music influences our mood.",cat:"名詞・基本"},
+  {w:"ingredient",m:"材料、成分",p:"/ɪnˈɡriːdiənt/",ex:"Mix all the ingredients together.",cat:"名詞・基本"},
+  {w:"inherit",m:"相続する",p:"/ɪnˈherɪt/",ex:"She inherited the house from her grandmother.",cat:"動詞・基本"},
+  {w:"initial",m:"最初の",p:"/ɪˈnɪʃl/",ex:"The initial results were promising.",cat:"形容詞"},
+  {w:"initiative",m:"主導権、取り組み",p:"/ɪˈnɪʃətɪv/",ex:"She took the initiative.",cat:"名詞・学術"},
+  {w:"innovation",m:"革新",p:"/ˌɪnəˈveɪʃn/",ex:"Innovation drives progress.",cat:"名詞・学術"},
+  {w:"inquire",m:"尋ねる",p:"/ɪnˈkwaɪər/",ex:"She inquired about the schedule.",cat:"動詞・基本"},
+  {w:"insight",m:"洞察",p:"/ˈɪnsaɪt/",ex:"The book offers valuable insights.",cat:"名詞・学術"},
+  {w:"inspect",m:"検査する",p:"/ɪnˈspekt/",ex:"Officials inspected the factory.",cat:"動詞・基本"},
+  {w:"inspire",m:"鼓舞する",p:"/ɪnˈspaɪər/",ex:"Her story inspired many people.",cat:"動詞・基本"},
+  {w:"instance",m:"例",p:"/ˈɪnstəns/",ex:"For instance, look at this chart.",cat:"名詞・基本"},
+  {w:"instinct",m:"本能",p:"/ˈɪnstɪŋkt/",ex:"Animals rely on instinct.",cat:"名詞・科学"},
+  {w:"institution",m:"機関、制度",p:"/ˌɪnstɪˈtuːʃn/",ex:"Educational institutions play a key role.",cat:"名詞・学術"},
+  {w:"instrument",m:"楽器、器具",p:"/ˈɪnstrəmənt/",ex:"She plays several instruments.",cat:"名詞・基本"},
+  {w:"intellectual",m:"知的な",p:"/ˌɪntəˈlektʃuəl/",ex:"Intellectual curiosity is important.",cat:"形容詞"},
+  {w:"intense",m:"激しい",p:"/ɪnˈtens/",ex:"The heat was intense.",cat:"形容詞"},
+  {w:"interact",m:"交流する",p:"/ˌɪntərˈækt/",ex:"Students interact with each other.",cat:"動詞・基本"},
+  {w:"interpret",m:"解釈する、通訳する",p:"/ɪnˈtɜːrprɪt/",ex:"How do you interpret this data?",cat:"動詞・基本"},
+  {w:"investigate",m:"調査する",p:"/ɪnˈvestɪɡeɪt/",ex:"Police investigated the crime.",cat:"動詞・基本"},
+  {w:"involve",m:"含む、関わる",p:"/ɪnˈvɑːlv/",ex:"The project involves many people.",cat:"動詞・基本"},
+  {w:"isolate",m:"孤立させる",p:"/ˈaɪsəleɪt/",ex:"The village was isolated by snow.",cat:"動詞・基本"},
+  {w:"issue",m:"問題、発行する",p:"/ˈɪʃuː/",ex:"Environmental issues are critical.",cat:"名詞・基本"},
+  {w:"judge",m:"判断する、裁判官",p:"/dʒʌdʒ/",ex:"Don't judge people by their appearance.",cat:"動詞・基本"},
+  {w:"justify",m:"正当化する",p:"/ˈdʒʌstɪfaɪ/",ex:"How can you justify this decision?",cat:"動詞・基本"},
+  {w:"keen",m:"鋭い、熱心な",p:"/kiːn/",ex:"She has a keen interest in art.",cat:"形容詞"},
+  {w:"labor",m:"労働",p:"/ˈleɪbər/",ex:"Manual labor is demanding.",cat:"名詞・学術"},
+  {w:"landscape",m:"風景、景観",p:"/ˈlændskeɪp/",ex:"The landscape was breathtaking.",cat:"名詞・基本"},
+  {w:"launch",m:"打ち上げる、開始する",p:"/lɔːntʃ/",ex:"They launched a new product.",cat:"動詞・基本"},
+  {w:"lean",m:"もたれる、痩せた",p:"/liːn/",ex:"She leaned against the wall.",cat:"動詞・基本"},
+  {w:"legislation",m:"法律、立法",p:"/ˌledʒɪsˈleɪʃn/",ex:"New legislation was passed.",cat:"名詞・学術"},
+  {w:"liberty",m:"自由",p:"/ˈlɪbərti/",ex:"The statue symbolizes liberty.",cat:"名詞・学術"},
+  {w:"literally",m:"文字通り",p:"/ˈlɪtərəli/",ex:"I literally ran the entire way.",cat:"副詞"},
+  {w:"load",m:"荷物、積む",p:"/loʊd/",ex:"The truck carried a heavy load.",cat:"名詞・基本"},
+  {w:"logic",m:"論理",p:"/ˈlɑːdʒɪk/",ex:"His argument lacks logic.",cat:"名詞・学術"},
+  {w:"luxury",m:"贅沢",p:"/ˈlʌkʃəri/",ex:"A vacation is a luxury.",cat:"名詞・基本"},
+  // === M-O ===
+  {w:"magnificent",m:"壮大な、素晴らしい",p:"/mæɡˈnɪfɪsnt/",ex:"The view was magnificent.",cat:"形容詞"},
+  {w:"maintain",m:"維持する",p:"/meɪnˈteɪn/",ex:"Maintain a healthy lifestyle.",cat:"動詞・基本"},
+  {w:"majority",m:"大多数",p:"/məˈdʒɔːrəti/",ex:"The majority voted yes.",cat:"名詞・学術"},
+  {w:"manufacture",m:"製造する",p:"/ˌmænjuˈfæktʃər/",ex:"Cars are manufactured in Japan.",cat:"動詞・基本"},
+  {w:"margin",m:"余白、差",p:"/ˈmɑːrdʒɪn/",ex:"He won by a narrow margin.",cat:"名詞・学術"},
+  {w:"mature",m:"成熟した",p:"/məˈtʃʊr/",ex:"She is very mature for her age.",cat:"形容詞"},
+  {w:"mayor",m:"市長",p:"/ˈmeɪər/",ex:"The mayor made a speech.",cat:"名詞・基本"},
+  {w:"meanwhile",m:"その間に",p:"/ˈmiːnwaɪl/",ex:"Meanwhile, he waited outside.",cat:"副詞"},
+  {w:"measure",m:"測定する、対策",p:"/ˈmeʒər/",ex:"We need to take measures.",cat:"動詞・基本"},
+  {w:"mechanism",m:"仕組み",p:"/ˈmekənɪzəm/",ex:"The mechanism is simple.",cat:"名詞・科学"},
+  {w:"mental",m:"精神の",p:"/ˈmentl/",ex:"Mental health is important.",cat:"形容詞"},
+  {w:"merely",m:"単に",p:"/ˈmɪrli/",ex:"It was merely a suggestion.",cat:"副詞"},
+  {w:"method",m:"方法",p:"/ˈmeθəd/",ex:"This method is effective.",cat:"名詞・学術"},
+  {w:"migrate",m:"移住する",p:"/ˈmaɪɡreɪt/",ex:"Birds migrate south in winter.",cat:"動詞・基本"},
+  {w:"military",m:"軍事の",p:"/ˈmɪlɪteri/",ex:"Military spending increased.",cat:"形容詞"},
+  {w:"minimum",m:"最小限の",p:"/ˈmɪnɪməm/",ex:"The minimum age is 18.",cat:"形容詞"},
+  {w:"minister",m:"大臣",p:"/ˈmɪnɪstər/",ex:"The prime minister gave a speech.",cat:"名詞・学術"},
+  {w:"minor",m:"小さい、未成年の",p:"/ˈmaɪnər/",ex:"It was a minor problem.",cat:"形容詞"},
+  {w:"miracle",m:"奇跡",p:"/ˈmɪrəkl/",ex:"It was a miracle that he survived.",cat:"名詞・基本"},
+  {w:"modify",m:"修正する",p:"/ˈmɑːdɪfaɪ/",ex:"We need to modify the design.",cat:"動詞・基本"},
+  {w:"moral",m:"道徳的な",p:"/ˈmɔːrəl/",ex:"It's a moral responsibility.",cat:"形容詞"},
+  {w:"moreover",m:"さらに",p:"/mɔːrˈoʊvər/",ex:"Moreover, it saves time.",cat:"副詞"},
+  {w:"myth",m:"神話",p:"/mɪθ/",ex:"Greek myths are fascinating.",cat:"名詞・基本"},
+  {w:"neglect",m:"怠る、無視する",p:"/nɪˈɡlekt/",ex:"Don't neglect your health.",cat:"動詞・基本"},
+  {w:"negotiate",m:"交渉する",p:"/nɪˈɡoʊʃieɪt/",ex:"They negotiated a deal.",cat:"動詞・基本"},
+  {w:"noble",m:"高貴な",p:"/ˈnoʊbl/",ex:"He had noble intentions.",cat:"形容詞"},
+  {w:"notion",m:"概念、考え",p:"/ˈnoʊʃn/",ex:"The notion was rejected.",cat:"名詞・学術"},
+  {w:"numerous",m:"多数の",p:"/ˈnuːmərəs/",ex:"Numerous studies support this.",cat:"形容詞"},
+  {w:"nutrition",m:"栄養",p:"/nuːˈtrɪʃn/",ex:"Good nutrition is essential.",cat:"名詞・科学"},
+  {w:"obey",m:"従う",p:"/oʊˈbeɪ/",ex:"Obey the traffic rules.",cat:"動詞・基本"},
+  {w:"objection",m:"反対",p:"/əbˈdʒekʃn/",ex:"There were no objections.",cat:"名詞・学術"},
+  {w:"observe",m:"観察する",p:"/əbˈzɜːrv/",ex:"Scientists observe animal behavior.",cat:"動詞・基本"},
+  {w:"obstacle",m:"障害",p:"/ˈɑːbstəkl/",ex:"Poverty is a major obstacle.",cat:"名詞・学術"},
+  {w:"obtain",m:"得る",p:"/əbˈteɪn/",ex:"She obtained a degree in art.",cat:"動詞・基本"},
+  {w:"obvious",m:"明白な",p:"/ˈɑːbviəs/",ex:"The answer is obvious.",cat:"形容詞"},
+  {w:"occasion",m:"機会、場合",p:"/əˈkeɪʒn/",ex:"It was a special occasion.",cat:"名詞・基本"},
+  {w:"occupy",m:"占める",p:"/ˈɑːkjupaɪ/",ex:"The meeting occupied the entire morning.",cat:"動詞・基本"},
+  {w:"offense",m:"違反、不快",p:"/əˈfens/",ex:"No offense intended.",cat:"名詞・基本"},
+  {w:"oppose",m:"反対する",p:"/əˈpoʊz/",ex:"Many citizens opposed the plan.",cat:"動詞・基本"},
+  {w:"optimistic",m:"楽観的な",p:"/ˌɑːptɪˈmɪstɪk/",ex:"She is optimistic about the future.",cat:"形容詞"},
+  {w:"option",m:"選択肢",p:"/ˈɑːpʃn/",ex:"There are several options.",cat:"名詞・基本"},
+  {w:"ordinary",m:"普通の",p:"/ˈɔːrdəneri/",ex:"It was an ordinary day.",cat:"形容詞"},
+  {w:"organ",m:"臓器、器官",p:"/ˈɔːrɡən/",ex:"The heart is a vital organ.",cat:"名詞・科学"},
+  {w:"organize",m:"組織する",p:"/ˈɔːrɡənaɪz/",ex:"She organized the event.",cat:"動詞・基本"},
+  {w:"origin",m:"起源",p:"/ˈɔːrɪdʒɪn/",ex:"What is the origin of this word?",cat:"名詞・学術"},
+  {w:"outcome",m:"結果",p:"/ˈaʊtkʌm/",ex:"The outcome was unexpected.",cat:"名詞・学術"},
+  {w:"outline",m:"概要、要点",p:"/ˈaʊtlaɪn/",ex:"Give me an outline of the plan.",cat:"名詞・基本"},
+  {w:"overcome",m:"克服する",p:"/ˌoʊvərˈkʌm/",ex:"She overcame many obstacles.",cat:"動詞・基本"},
+  {w:"overlook",m:"見落とす",p:"/ˌoʊvərˈlʊk/",ex:"Don't overlook this detail.",cat:"動詞・基本"},
+  {w:"overwhelm",m:"圧倒する",p:"/ˌoʊvərˈwelm/",ex:"She was overwhelmed by kindness.",cat:"動詞・基本"},
+  // === P-R ===
+  {w:"participate",m:"参加する",p:"/pɑːrˈtɪsɪpeɪt/",ex:"Everyone should participate.",cat:"動詞・基本"},
+  {w:"particular",m:"特定の",p:"/pərˈtɪkjələr/",ex:"Any particular reason?",cat:"形容詞"},
+  {w:"passion",m:"情熱",p:"/ˈpæʃn/",ex:"He has a passion for music.",cat:"名詞・基本"},
+  {w:"patience",m:"忍耐",p:"/ˈpeɪʃns/",ex:"Teaching requires patience.",cat:"名詞・基本"},
+  {w:"peak",m:"頂点、ピーク",p:"/piːk/",ex:"Sales reached their peak in December.",cat:"名詞・基本"},
+  {w:"perceive",m:"知覚する、認識する",p:"/pərˈsiːv/",ex:"She perceived a change in his mood.",cat:"動詞・基本"},
+  {w:"permanent",m:"永久の",p:"/ˈpɜːrmənənt/",ex:"Is this a permanent job?",cat:"形容詞"},
+  {w:"permit",m:"許可する",p:"/pərˈmɪt/",ex:"Smoking is not permitted here.",cat:"動詞・基本"},
+  {w:"perspective",m:"視点、見方",p:"/pərˈspektɪv/",ex:"See things from a different perspective.",cat:"名詞・学術"},
+  {w:"phenomenon",m:"現象",p:"/fɪˈnɑːmɪnɑːn/",ex:"It's a natural phenomenon.",cat:"名詞・科学"},
+  {w:"philosophy",m:"哲学",p:"/fɪˈlɑːsəfi/",ex:"She studied philosophy at university.",cat:"名詞・学術"},
+  {w:"phrase",m:"句、表現",p:"/freɪz/",ex:"That's a common phrase.",cat:"名詞・基本"},
+  {w:"pioneer",m:"先駆者",p:"/ˌpaɪəˈnɪr/",ex:"She was a pioneer in science.",cat:"名詞・学術"},
+  {w:"plain",m:"平らな、質素な",p:"/pleɪn/",ex:"The answer is plain and simple.",cat:"形容詞"},
+  {w:"plenty",m:"たくさん",p:"/ˈplenti/",ex:"There is plenty of time.",cat:"名詞・基本"},
+  {w:"policy",m:"政策、方針",p:"/ˈpɑːləsi/",ex:"The company changed its policy.",cat:"名詞・学術"},
+  {w:"pollution",m:"汚染",p:"/pəˈluːʃn/",ex:"Air pollution is a major problem.",cat:"名詞・科学"},
+  {w:"population",m:"人口",p:"/ˌpɑːpjuˈleɪʃn/",ex:"The population keeps growing.",cat:"名詞・学術"},
+  {w:"portion",m:"部分、一人前",p:"/ˈpɔːrʃn/",ex:"She ate a large portion.",cat:"名詞・基本"},
+  {w:"possess",m:"所有する",p:"/pəˈzes/",ex:"She possesses great talent.",cat:"動詞・基本"},
+  {w:"potential",m:"可能性のある、潜在力",p:"/pəˈtenʃl/",ex:"He has great potential.",cat:"形容詞"},
+  {w:"poverty",m:"貧困",p:"/ˈpɑːvərti/",ex:"Poverty is a global issue.",cat:"名詞・学術"},
+  {w:"precious",m:"貴重な",p:"/ˈpreʃəs/",ex:"Time is precious.",cat:"形容詞"},
+  {w:"predict",m:"予測する",p:"/prɪˈdɪkt/",ex:"It's hard to predict the future.",cat:"動詞・基本"},
+  {w:"prejudice",m:"偏見",p:"/ˈpredʒudɪs/",ex:"We must fight against prejudice.",cat:"名詞・学術"},
+  {w:"preserve",m:"保存する",p:"/prɪˈzɜːrv/",ex:"We should preserve cultural heritage.",cat:"動詞・基本"},
+  {w:"previous",m:"以前の",p:"/ˈpriːviəs/",ex:"The previous owner sold the house.",cat:"形容詞"},
+  {w:"principle",m:"原理、原則",p:"/ˈprɪnsəpl/",ex:"It's a basic principle of science.",cat:"名詞・学術"},
+  {w:"prior",m:"前の",p:"/ˈpraɪər/",ex:"Prior experience is required.",cat:"形容詞"},
+  {w:"privilege",m:"特権",p:"/ˈprɪvəlɪdʒ/",ex:"Education is a privilege.",cat:"名詞・学術"},
+  {w:"procedure",m:"手順",p:"/prəˈsiːdʒər/",ex:"Follow the correct procedure.",cat:"名詞・学術"},
+  {w:"process",m:"過程、処理する",p:"/ˈprɑːses/",ex:"Learning is a gradual process.",cat:"名詞・学術"},
+  {w:"profession",m:"職業",p:"/prəˈfeʃn/",ex:"Teaching is a noble profession.",cat:"名詞・基本"},
+  {w:"profit",m:"利益",p:"/ˈprɑːfɪt/",ex:"The company made a large profit.",cat:"名詞・基本"},
+  {w:"profound",m:"深い、重大な",p:"/prəˈfaʊnd/",ex:"It had a profound effect.",cat:"形容詞"},
+  {w:"prohibit",m:"禁止する",p:"/proʊˈhɪbɪt/",ex:"Photography is prohibited.",cat:"動詞・基本"},
+  {w:"prominent",m:"著名な、目立つ",p:"/ˈprɑːmɪnənt/",ex:"She is a prominent scientist.",cat:"形容詞"},
+  {w:"promote",m:"促進する、昇進させる",p:"/prəˈmoʊt/",ex:"They promote healthy eating.",cat:"動詞・基本"},
+  {w:"proportion",m:"割合",p:"/prəˈpɔːrʃn/",ex:"A large proportion of students passed.",cat:"名詞・学術"},
+  {w:"propose",m:"提案する",p:"/prəˈpoʊz/",ex:"She proposed a new plan.",cat:"動詞・基本"},
+  {w:"prospect",m:"見通し、見込み",p:"/ˈprɑːspekt/",ex:"Job prospects are improving.",cat:"名詞・学術"},
+  {w:"protest",m:"抗議する",p:"/ˈproʊtest/",ex:"Citizens protested against the law.",cat:"動詞・基本"},
+  {w:"prove",m:"証明する",p:"/pruːv/",ex:"Can you prove your theory?",cat:"動詞・基本"},
+  {w:"pursue",m:"追求する",p:"/pərˈsuː/",ex:"He pursued his dream of becoming an artist.",cat:"動詞・基本"},
+  {w:"qualify",m:"資格を得る",p:"/ˈkwɑːlɪfaɪ/",ex:"She qualified as a teacher.",cat:"動詞・基本"},
+  {w:"quantity",m:"量",p:"/ˈkwɑːntəti/",ex:"A large quantity was ordered.",cat:"名詞・基本"},
+  {w:"quarter",m:"四分の一",p:"/ˈkwɔːrtər/",ex:"Sales rose in the third quarter.",cat:"名詞・基本"},
+  {w:"random",m:"無作為の",p:"/ˈrændəm/",ex:"The selection was random.",cat:"形容詞"},
+  {w:"range",m:"範囲",p:"/reɪndʒ/",ex:"A wide range of products is available.",cat:"名詞・基本"},
+  {w:"rapid",m:"急速な",p:"/ˈræpɪd/",ex:"Rapid changes occurred.",cat:"形容詞"},
+  {w:"rare",m:"まれな",p:"/rer/",ex:"That species is very rare.",cat:"形容詞"},
+  {w:"rational",m:"合理的な",p:"/ˈræʃnəl/",ex:"Make a rational decision.",cat:"形容詞"},
+  {w:"react",m:"反応する",p:"/riˈækt/",ex:"How did she react to the news?",cat:"動詞・基本"},
+  {w:"reality",m:"現実",p:"/riˈæləti/",ex:"Face the reality.",cat:"名詞・基本"},
+  {w:"reasonable",m:"合理的な",p:"/ˈriːznəbl/",ex:"The price is reasonable.",cat:"形容詞"},
+  {w:"recall",m:"思い出す、回収",p:"/rɪˈkɔːl/",ex:"I can't recall his name.",cat:"動詞・基本"},
+  {w:"recognize",m:"認識する",p:"/ˈrekəɡnaɪz/",ex:"She recognized his face immediately.",cat:"動詞・基本"},
+  {w:"recommend",m:"勧める",p:"/ˌrekəˈmend/",ex:"I recommend this book.",cat:"動詞・基本"},
+  {w:"recover",m:"回復する",p:"/rɪˈkʌvər/",ex:"She recovered from the illness.",cat:"動詞・基本"},
+  {w:"reduce",m:"減らす",p:"/rɪˈduːs/",ex:"Reduce waste as much as possible.",cat:"動詞・基本"},
+  {w:"refer",m:"言及する",p:"/rɪˈfɜːr/",ex:"He referred to the document.",cat:"動詞・基本"},
+  {w:"reflect",m:"反映する、振り返る",p:"/rɪˈflekt/",ex:"The results reflect our effort.",cat:"動詞・基本"},
+  {w:"reform",m:"改革",p:"/rɪˈfɔːrm/",ex:"Education reform is needed.",cat:"名詞・学術"},
+  {w:"refuse",m:"拒否する",p:"/rɪˈfjuːz/",ex:"She refused the offer.",cat:"動詞・基本"},
+  {w:"region",m:"地域",p:"/ˈriːdʒən/",ex:"The region is known for its wine.",cat:"名詞・基本"},
+  {w:"register",m:"登録する",p:"/ˈredʒɪstər/",ex:"Please register online.",cat:"動詞・基本"},
+  {w:"regulate",m:"規制する",p:"/ˈreɡjuleɪt/",ex:"The government regulates the industry.",cat:"動詞・基本"},
+  {w:"reject",m:"拒否する",p:"/rɪˈdʒekt/",ex:"The proposal was rejected.",cat:"動詞・基本"},
+  {w:"relate",m:"関連づける",p:"/rɪˈleɪt/",ex:"I can relate to that feeling.",cat:"動詞・基本"},
+  {w:"release",m:"解放する、発表する",p:"/rɪˈliːs/",ex:"The movie was released last week.",cat:"動詞・基本"},
+  {w:"relevant",m:"関連のある",p:"/ˈreləvənt/",ex:"Is this information relevant?",cat:"形容詞"},
+  {w:"relief",m:"安心、救援",p:"/rɪˈliːf/",ex:"What a relief!",cat:"名詞・基本"},
+  {w:"rely",m:"頼る",p:"/rɪˈlaɪ/",ex:"You can rely on me.",cat:"動詞・基本"},
+  {w:"remain",m:"残る",p:"/rɪˈmeɪn/",ex:"The problem remains unsolved.",cat:"動詞・基本"},
+  {w:"remarkable",m:"注目すべき",p:"/rɪˈmɑːrkəbl/",ex:"She made remarkable progress.",cat:"形容詞"},
+  {w:"remedy",m:"治療法、対策",p:"/ˈremədi/",ex:"What's the best remedy for a cold?",cat:"名詞・基本"},
+  {w:"remote",m:"遠い、遠隔の",p:"/rɪˈmoʊt/",ex:"Remote work is becoming popular.",cat:"形容詞"},
+  {w:"renewable",m:"再生可能な",p:"/rɪˈnuːəbl/",ex:"Renewable energy sources include solar and wind.",cat:"形容詞"},
+  {w:"replace",m:"取り替える",p:"/rɪˈpleɪs/",ex:"We need to replace the old equipment.",cat:"動詞・基本"},
+  {w:"represent",m:"代表する",p:"/ˌreprɪˈzent/",ex:"She represents the company.",cat:"動詞・基本"},
+  {w:"reproduce",m:"再生する、繁殖する",p:"/ˌriːprəˈduːs/",ex:"Bacteria reproduce quickly.",cat:"動詞・基本"},
+  {w:"reputation",m:"評判",p:"/ˌrepjuˈteɪʃn/",ex:"The restaurant has a good reputation.",cat:"名詞・基本"},
+  {w:"require",m:"必要とする",p:"/rɪˈkwaɪər/",ex:"This job requires experience.",cat:"動詞・基本"},
+  {w:"research",m:"研究",p:"/ˈriːsɜːrtʃ/",ex:"More research is needed.",cat:"名詞・学術"},
+  {w:"resemble",m:"似ている",p:"/rɪˈzembl/",ex:"She resembles her mother.",cat:"動詞・基本"},
+  {w:"reserve",m:"予約する、蓄え",p:"/rɪˈzɜːrv/",ex:"Reserve a table for two.",cat:"動詞・基本"},
+  {w:"residence",m:"住居",p:"/ˈrezɪdəns/",ex:"His residence is in Tokyo.",cat:"名詞・基本"},
+  {w:"resign",m:"辞職する",p:"/rɪˈzaɪn/",ex:"The manager resigned.",cat:"動詞・基本"},
+  {w:"resist",m:"抵抗する",p:"/rɪˈzɪst/",ex:"She couldn't resist the chocolate.",cat:"動詞・基本"},
+  {w:"resolve",m:"解決する",p:"/rɪˈzɑːlv/",ex:"They resolved the conflict.",cat:"動詞・基本"},
+  {w:"resource",m:"資源",p:"/ˈriːsɔːrs/",ex:"Natural resources are limited.",cat:"名詞・学術"},
+  {w:"respond",m:"応答する",p:"/rɪˈspɑːnd/",ex:"He didn't respond to the email.",cat:"動詞・基本"},
+  {w:"restore",m:"復元する",p:"/rɪˈstɔːr/",ex:"They restored the old building.",cat:"動詞・基本"},
+  {w:"restrict",m:"制限する",p:"/rɪˈstrɪkt/",ex:"Access is restricted.",cat:"動詞・基本"},
+  {w:"retain",m:"保持する",p:"/rɪˈteɪn/",ex:"She retained her position.",cat:"動詞・基本"},
+  {w:"reveal",m:"明らかにする",p:"/rɪˈviːl/",ex:"The study revealed surprising facts.",cat:"動詞・基本"},
+  {w:"revenue",m:"収入、歳入",p:"/ˈrevənuː/",ex:"Company revenue increased by 10%.",cat:"名詞・学術"},
+  {w:"revolution",m:"革命",p:"/ˌrevəˈluːʃn/",ex:"The French Revolution changed history.",cat:"名詞・学術"},
+  {w:"reward",m:"報酬",p:"/rɪˈwɔːrd/",ex:"Hard work brings rewards.",cat:"名詞・基本"},
+  {w:"rival",m:"ライバル",p:"/ˈraɪvl/",ex:"The two companies are rivals.",cat:"名詞・基本"},
+  {w:"routine",m:"日課、定型的な",p:"/ruːˈtiːn/",ex:"Exercise is part of my daily routine.",cat:"名詞・基本"},
+  {w:"rural",m:"田舎の",p:"/ˈrʊrəl/",ex:"Rural areas lack public transport.",cat:"形容詞"},
+  // === S-T ===
+  {w:"sacrifice",m:"犠牲にする",p:"/ˈsækrɪfaɪs/",ex:"She sacrificed her free time.",cat:"動詞・基本"},
+  {w:"satellite",m:"衛星",p:"/ˈsætəlaɪt/",ex:"The satellite orbits the Earth.",cat:"名詞・科学"},
+  {w:"satisfy",m:"満足させる",p:"/ˈsætɪsfaɪ/",ex:"The result satisfied everyone.",cat:"動詞・基本"},
+  {w:"scale",m:"規模、尺度",p:"/skeɪl/",ex:"The project was on a large scale.",cat:"名詞・学術"},
+  {w:"scarce",m:"乏しい",p:"/skers/",ex:"Water is scarce in this region.",cat:"形容詞"},
+  {w:"scatter",m:"散らばる",p:"/ˈskætər/",ex:"Papers were scattered on the floor.",cat:"動詞・基本"},
+  {w:"scheme",m:"計画、策略",p:"/skiːm/",ex:"They devised a new scheme.",cat:"名詞・学術"},
+  {w:"scholar",m:"学者",p:"/ˈskɑːlər/",ex:"She is a well-known scholar.",cat:"名詞・学術"},
+  {w:"scope",m:"範囲",p:"/skoʊp/",ex:"This is beyond the scope of the project.",cat:"名詞・学術"},
+  {w:"seek",m:"探す、求める",p:"/siːk/",ex:"They seek a peaceful solution.",cat:"動詞・基本"},
+  {w:"seize",m:"つかむ、押収する",p:"/siːz/",ex:"Seize the opportunity.",cat:"動詞・基本"},
+  {w:"sensitive",m:"敏感な",p:"/ˈsensətɪv/",ex:"She is sensitive to criticism.",cat:"形容詞"},
+  {w:"separate",m:"分ける、別々の",p:"/ˈsepəreɪt/",ex:"Separate the colors from the whites.",cat:"動詞・基本"},
+  {w:"severe",m:"厳しい、深刻な",p:"/sɪˈvɪr/",ex:"Severe weather is expected.",cat:"形容詞"},
+  {w:"shelter",m:"避難所",p:"/ˈʃeltər/",ex:"They found shelter from the storm.",cat:"名詞・基本"},
+  {w:"shift",m:"移動する、変化",p:"/ʃɪft/",ex:"There was a shift in public opinion.",cat:"名詞・基本"},
+  {w:"significant",m:"重要な",p:"/sɪɡˈnɪfɪkənt/",ex:"A significant discovery was made.",cat:"形容詞"},
+  {w:"simulate",m:"模擬する",p:"/ˈsɪmjuleɪt/",ex:"The program simulates flight conditions.",cat:"動詞・基本"},
+  {w:"sincere",m:"誠実な",p:"/sɪnˈsɪr/",ex:"She gave a sincere apology.",cat:"形容詞"},
+  {w:"slight",m:"わずかな",p:"/slaɪt/",ex:"There was a slight delay.",cat:"形容詞"},
+  {w:"smooth",m:"滑らかな",p:"/smuːð/",ex:"The transition was smooth.",cat:"形容詞"},
+  {w:"solar",m:"太陽の",p:"/ˈsoʊlər/",ex:"Solar energy is renewable.",cat:"形容詞"},
+  {w:"solid",m:"固体の、確かな",p:"/ˈsɑːlɪd/",ex:"Build a solid foundation.",cat:"形容詞"},
+  {w:"solution",m:"解決策",p:"/səˈluːʃn/",ex:"We need a creative solution.",cat:"名詞・基本"},
+  {w:"sophisticated",m:"洗練された",p:"/səˈfɪstɪkeɪtɪd/",ex:"The technology is sophisticated.",cat:"形容詞"},
+  {w:"source",m:"源、出典",p:"/sɔːrs/",ex:"Check your sources carefully.",cat:"名詞・学術"},
+  {w:"species",m:"種",p:"/ˈspiːʃiːz/",ex:"Many species are endangered.",cat:"名詞・科学"},
+  {w:"specific",m:"特定の",p:"/spəˈsɪfɪk/",ex:"Give me a specific example.",cat:"形容詞"},
+  {w:"speculate",m:"推測する",p:"/ˈspekjuleɪt/",ex:"We can only speculate.",cat:"動詞・基本"},
+  {w:"stable",m:"安定した",p:"/ˈsteɪbl/",ex:"The economy is stable.",cat:"形容詞"},
+  {w:"statistics",m:"統計",p:"/stəˈtɪstɪks/",ex:"Statistics show an increase.",cat:"名詞・学術"},
+  {w:"status",m:"地位、状態",p:"/ˈsteɪtəs/",ex:"What is the status of the project?",cat:"名詞・基本"},
+  {w:"steady",m:"着実な",p:"/ˈstedi/",ex:"She made steady progress.",cat:"形容詞"},
+  {w:"stimulate",m:"刺激する",p:"/ˈstɪmjuleɪt/",ex:"Coffee stimulates the brain.",cat:"動詞・基本"},
+  {w:"strategy",m:"戦略",p:"/ˈstrætədʒi/",ex:"We need a new strategy.",cat:"名詞・学術"},
+  {w:"strict",m:"厳しい",p:"/strɪkt/",ex:"The rules are very strict.",cat:"形容詞"},
+  {w:"structure",m:"構造",p:"/ˈstrʌktʃər/",ex:"The structure of the building is unique.",cat:"名詞・学術"},
+  {w:"struggle",m:"奮闘する",p:"/ˈstrʌɡl/",ex:"She struggled to finish the project.",cat:"動詞・基本"},
+  {w:"submit",m:"提出する",p:"/səbˈmɪt/",ex:"Submit your application by Friday.",cat:"動詞・基本"},
+  {w:"substance",m:"物質",p:"/ˈsʌbstəns/",ex:"A harmful substance was detected.",cat:"名詞・科学"},
+  {w:"substitute",m:"代わりの、代用する",p:"/ˈsʌbstɪtuːt/",ex:"Use honey as a substitute for sugar.",cat:"名詞・基本"},
+  {w:"sufficient",m:"十分な",p:"/səˈfɪʃnt/",ex:"We have sufficient data.",cat:"形容詞"},
+  {w:"summit",m:"頂上、首脳会議",p:"/ˈsʌmɪt/",ex:"They reached the summit.",cat:"名詞・学術"},
+  {w:"superior",m:"優れた",p:"/suːˈpɪriər/",ex:"This product is superior.",cat:"形容詞"},
+  {w:"supply",m:"供給する",p:"/səˈplaɪ/",ex:"We supply food to local stores.",cat:"動詞・基本"},
+  {w:"supreme",m:"最高の",p:"/suːˈpriːm/",ex:"The Supreme Court made a ruling.",cat:"形容詞"},
+  {w:"surgery",m:"手術",p:"/ˈsɜːrdʒəri/",ex:"She had heart surgery.",cat:"名詞・科学"},
+  {w:"surround",m:"囲む",p:"/səˈraʊnd/",ex:"Mountains surround the city.",cat:"動詞・基本"},
+  {w:"survey",m:"調査",p:"/ˈsɜːrveɪ/",ex:"A survey was conducted.",cat:"名詞・学術"},
+  {w:"survive",m:"生き残る",p:"/sərˈvaɪv/",ex:"She survived the accident.",cat:"動詞・基本"},
+  {w:"suspect",m:"疑う",p:"/səˈspekt/",ex:"I suspect he is lying.",cat:"動詞・基本"},
+  {w:"sustain",m:"維持する",p:"/səˈsteɪn/",ex:"Sustain economic growth.",cat:"動詞・基本"},
+  {w:"symbol",m:"象徴",p:"/ˈsɪmbl/",ex:"The dove is a symbol of peace.",cat:"名詞・基本"},
+  {w:"symptom",m:"症状",p:"/ˈsɪmptəm/",ex:"Common symptoms include fever.",cat:"名詞・科学"},
+  {w:"technique",m:"技術、テクニック",p:"/tekˈniːk/",ex:"She learned new painting techniques.",cat:"名詞・学術"},
+  {w:"temporary",m:"一時的な",p:"/ˈtempəreri/",ex:"This is a temporary solution.",cat:"形容詞"},
+  {w:"tend",m:"傾向がある",p:"/tend/",ex:"People tend to forget.",cat:"動詞・基本"},
+  {w:"tension",m:"緊張",p:"/ˈtenʃn/",ex:"There was tension between the groups.",cat:"名詞・学術"},
+  {w:"territory",m:"領土",p:"/ˈterɪtɔːri/",ex:"Animals defend their territory.",cat:"名詞・学術"},
+  {w:"theory",m:"理論",p:"/ˈθɪri/",ex:"The theory was proved correct.",cat:"名詞・学術"},
+  {w:"therapy",m:"治療",p:"/ˈθerəpi/",ex:"Art therapy can be very helpful.",cat:"名詞・科学"},
+  {w:"thorough",m:"徹底的な",p:"/ˈθɜːroʊ/",ex:"A thorough investigation was conducted.",cat:"形容詞"},
+  {w:"threat",m:"脅威",p:"/θret/",ex:"Climate change is a major threat.",cat:"名詞・学術"},
+  {w:"thrive",m:"繁栄する",p:"/θraɪv/",ex:"The business is thriving.",cat:"動詞・基本"},
+  {w:"tolerate",m:"耐える、許容する",p:"/ˈtɑːləreɪt/",ex:"I can't tolerate this behavior.",cat:"動詞・基本"},
+  {w:"trace",m:"跡、追跡する",p:"/treɪs/",ex:"They traced the origin of the virus.",cat:"動詞・基本"},
+  {w:"tradition",m:"伝統",p:"/trəˈdɪʃn/",ex:"It's a family tradition.",cat:"名詞・基本"},
+  {w:"transform",m:"変形させる",p:"/trænsˈfɔːrm/",ex:"Technology transformed our lives.",cat:"動詞・基本"},
+  {w:"transmit",m:"伝える、送信する",p:"/trænzˈmɪt/",ex:"The virus is transmitted through the air.",cat:"動詞・基本"},
+  {w:"tremendous",m:"とてつもない",p:"/trɪˈmendəs/",ex:"She made tremendous effort.",cat:"形容詞"},
+  {w:"trend",m:"傾向、トレンド",p:"/trend/",ex:"It's a growing trend.",cat:"名詞・基本"},
+  {w:"trial",m:"裁判、試み",p:"/ˈtraɪəl/",ex:"The trial lasted three weeks.",cat:"名詞・学術"},
+  {w:"trigger",m:"引き起こす",p:"/ˈtrɪɡər/",ex:"Stress can trigger health problems.",cat:"動詞・基本"},
+  {w:"triumph",m:"勝利",p:"/ˈtraɪʌmf/",ex:"It was a great triumph.",cat:"名詞・基本"},
+  {w:"tropical",m:"熱帯の",p:"/ˈtrɑːpɪkl/",ex:"Tropical forests are rich in biodiversity.",cat:"形容詞"},
+  {w:"typical",m:"典型的な",p:"/ˈtɪpɪkl/",ex:"A typical Japanese breakfast.",cat:"形容詞"},
+  // === U-Z ===
+  {w:"undergo",m:"経験する",p:"/ˌʌndərˈɡoʊ/",ex:"She underwent surgery.",cat:"動詞・基本"},
+  {w:"undertake",m:"引き受ける",p:"/ˌʌndərˈteɪk/",ex:"We undertook the project.",cat:"動詞・基本"},
+  {w:"unemployment",m:"失業",p:"/ˌʌnɪmˈplɔɪmənt/",ex:"Unemployment is rising.",cat:"名詞・学術"},
+  {w:"uniform",m:"制服、均一な",p:"/ˈjuːnɪfɔːrm/",ex:"Students wear a uniform.",cat:"名詞・基本"},
+  {w:"unique",m:"独自の",p:"/juːˈniːk/",ex:"Everyone is unique.",cat:"形容詞"},
+  {w:"universal",m:"普遍的な",p:"/ˌjuːnɪˈvɜːrsl/",ex:"Music is a universal language.",cat:"形容詞"},
+  {w:"urban",m:"都市の",p:"/ˈɜːrbən/",ex:"Urban areas are densely populated.",cat:"形容詞"},
+  {w:"urgent",m:"緊急の",p:"/ˈɜːrdʒənt/",ex:"This is an urgent matter.",cat:"形容詞"},
+  {w:"utilize",m:"利用する",p:"/ˈjuːtəlaɪz/",ex:"We should utilize all resources.",cat:"動詞・基本"},
+  {w:"valid",m:"有効な",p:"/ˈvælɪd/",ex:"Your passport is still valid.",cat:"形容詞"},
+  {w:"value",m:"価値",p:"/ˈvæljuː/",ex:"Family values are important.",cat:"名詞・基本"},
+  {w:"vanish",m:"消える",p:"/ˈvænɪʃ/",ex:"The fog vanished by noon.",cat:"動詞・基本"},
+  {w:"variety",m:"多様性、種類",p:"/vəˈraɪəti/",ex:"A variety of options are available.",cat:"名詞・基本"},
+  {w:"vast",m:"広大な",p:"/væst/",ex:"The universe is vast.",cat:"形容詞"},
+  {w:"vehicle",m:"乗り物",p:"/ˈviːɪkl/",ex:"Electric vehicles are popular.",cat:"名詞・基本"},
+  {w:"venture",m:"冒険的事業",p:"/ˈventʃər/",ex:"The new venture was risky.",cat:"名詞・学術"},
+  {w:"version",m:"版、バージョン",p:"/ˈvɜːrʒn/",ex:"Download the latest version.",cat:"名詞・基本"},
+  {w:"victim",m:"被害者",p:"/ˈvɪktɪm/",ex:"Victims received aid.",cat:"名詞・基本"},
+  {w:"violate",m:"違反する",p:"/ˈvaɪəleɪt/",ex:"They violated the agreement.",cat:"動詞・基本"},
+  {w:"virtual",m:"仮想の",p:"/ˈvɜːrtʃuəl/",ex:"Virtual meetings are common.",cat:"形容詞"},
+  {w:"virtue",m:"美徳",p:"/ˈvɜːrtʃuː/",ex:"Patience is a virtue.",cat:"名詞・基本"},
+  {w:"visible",m:"目に見える",p:"/ˈvɪzəbl/",ex:"Stars are visible at night.",cat:"形容詞"},
+  {w:"vital",m:"不可欠な",p:"/ˈvaɪtl/",ex:"Exercise is vital for health.",cat:"形容詞"},
+  {w:"vivid",m:"鮮やかな",p:"/ˈvɪvɪd/",ex:"She has vivid memories.",cat:"形容詞"},
+  {w:"volume",m:"量、巻",p:"/ˈvɑːljuːm/",ex:"Turn down the volume.",cat:"名詞・基本"},
+  {w:"volunteer",m:"ボランティア",p:"/ˌvɑːlənˈtɪr/",ex:"She volunteered at the shelter.",cat:"名詞・基本"},
+  {w:"vulnerable",m:"脆弱な",p:"/ˈvʌlnərəbl/",ex:"Children are especially vulnerable.",cat:"形容詞"},
+  {w:"wage",m:"賃金",p:"/weɪdʒ/",ex:"The minimum wage was raised.",cat:"名詞・基本"},
+  {w:"wander",m:"歩き回る",p:"/ˈwɑːndər/",ex:"They wandered through the city.",cat:"動詞・基本"},
+  {w:"wealth",m:"富",p:"/welθ/",ex:"Health is more important than wealth.",cat:"名詞・基本"},
+  {w:"welfare",m:"福祉",p:"/ˈwelfer/",ex:"Public welfare should be a priority.",cat:"名詞・学術"},
+  {w:"whereas",m:"一方で",p:"/werˈæz/",ex:"I like tea, whereas he prefers coffee.",cat:"接続詞"},
+  {w:"widespread",m:"広範囲の",p:"/ˈwaɪdspred/",ex:"Internet use is now widespread.",cat:"形容詞"},
+  {w:"wilderness",m:"荒野",p:"/ˈwɪldərnəs/",ex:"They explored the wilderness.",cat:"名詞・基本"},
+  {w:"witness",m:"目撃者、目撃する",p:"/ˈwɪtnəs/",ex:"She witnessed the accident.",cat:"名詞・基本"},
+  {w:"worship",m:"崇拝する",p:"/ˈwɜːrʃɪp/",ex:"They worship at the temple.",cat:"動詞・基本"},
+  {w:"worthy",m:"価値がある",p:"/ˈwɜːrði/",ex:"It's a worthy cause.",cat:"形容詞"},
+  {w:"yield",m:"もたらす、譲る",p:"/jiːld/",ex:"The experiment yielded good results.",cat:"動詞・基本"},
+  {w:"zone",m:"地帯",p:"/zoʊn/",ex:"This is a no-parking zone.",cat:"名詞・基本"},
+];
+
+// ===== APP STATE =====
+const STORAGE_KEY = 'eiken2-flashcard-v2';
+let state = loadState();
+let studyMode = 'all';
+let selectedCategories = new Set();
+let currentDeck = [];
+let currentIndex = 0;
+let sessionCorrect = 0;
+let sessionWrong = 0;
+let wrongWords = [];
+let currentFilter = 'all';
+let searchQuery = '';
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return { wordStatus: {}, sessions: 0, totalCorrect: 0, totalWrong: 0 };
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function getStatus(word) {
+  return state.wordStatus[word] || { status: 'new', wrongCount: 0, correctCount: 0 };
+}
+
+function getCategories() {
+  const cats = {};
+  WORDS.forEach(w => {
+    if (!cats[w.cat]) cats[w.cat] = { count: 0, icon: getCatIcon(w.cat) };
+    cats[w.cat].count++;
+  });
+  return cats;
+}
+
+function getCatIcon(cat) {
+  const icons = { '動詞・基本':'🔵', '形容詞':'🟢', '名詞・基本':'🟡', '名詞・学術':'📘', '名詞・科学':'🔬', '副詞':'🟣', '前置詞':'🔶', '接続詞':'🔗' };
+  return icons[cat] || '📝';
+}
+
+// ===== SCREENS =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelector(`[data-screen="${name}"]`).classList.add('active');
+  if (name === 'home') updateHome();
+  if (name === 'wordlist') renderWordList();
+  if (name === 'stats') updateStats();
+}
+
+function updateHome() {
+  let mastered = 0, learning = 0, newW = 0;
+  WORDS.forEach(w => {
+    const s = getStatus(w.w);
+    if (s.status === 'mastered') mastered++;
+    else if (s.status === 'learning') learning++;
+    else newW++;
+  });
+  document.getElementById('home-total').textContent = `全 ${WORDS.length} 語`;
+  document.getElementById('home-mastered').textContent = `覚えた ${mastered}`;
+  document.getElementById('home-learning').textContent = `学習中 ${learning}`;
+  document.getElementById('home-new').textContent = `未学習 ${newW}`;
+  document.getElementById('home-progress').style.width = `${(mastered / WORDS.length * 100).toFixed(1)}%`;
+  renderCategories();
+}
+
+function renderCategories() {
+  const cats = getCategories();
+  const grid = document.getElementById('category-grid');
+  grid.innerHTML = '';
+  Object.keys(cats).forEach(cat => {
+    const div = document.createElement('div');
+    div.className = 'category-card' + (selectedCategories.has(cat) ? ' selected' : '');
+    div.innerHTML = `<div class="cat-icon">${cats[cat].icon}</div><div class="cat-name">${cat}</div><div class="cat-count">${cats[cat].count}語</div>`;
+    div.onclick = () => { selectedCategories.has(cat) ? selectedCategories.delete(cat) : selectedCategories.add(cat); renderCategories(); };
+    grid.appendChild(div);
+  });
+}
+
+function selectMode(mode) {
+  studyMode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('mode-' + mode).classList.add('selected');
+}
+
+// ===== STUDY =====
+function startStudy() {
+  let pool = [...WORDS];
+  if (selectedCategories.size > 0) pool = pool.filter(w => selectedCategories.has(w.cat));
+  if (studyMode === 'weak') pool = pool.filter(w => { const s = getStatus(w.w); return s.status === 'learning' || s.wrongCount > 0; });
+  else if (studyMode === 'new') pool = pool.filter(w => getStatus(w.w).status === 'new');
+
+  if (pool.length === 0) { alert('該当する単語がありません。条件を変更してください。'); return; }
+
+  // Prioritize weak words: sort by wrongCount desc, then shuffle within similar scores
+  pool.sort((a, b) => {
+    const sa = getStatus(a.w), sb = getStatus(b.w);
+    if (sa.status === 'mastered' && sb.status !== 'mastered') return 1;
+    if (sb.status === 'mastered' && sa.status !== 'mastered') return -1;
+    return (sb.wrongCount || 0) - (sa.wrongCount || 0);
+  });
+
+  // Take up to 20, with randomization
+  const deck = pool.slice(0, Math.min(20, pool.length));
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+
+  currentDeck = deck;
+  currentIndex = 0;
+  sessionCorrect = 0;
+  sessionWrong = 0;
+  wrongWords = [];
+  showScreen('study');
+  showCard();
+}
+
+function showCard() {
+  if (currentIndex >= currentDeck.length) { showResults(); return; }
+  const word = currentDeck[currentIndex];
+  const s = getStatus(word.w);
+  const card = document.getElementById('flashcard');
+  card.classList.remove('flipped');
+
+  document.getElementById('card-word').textContent = word.w;
+  document.getElementById('card-phonetic').textContent = word.p;
+  document.getElementById('card-category').textContent = word.cat;
+  document.getElementById('card-category-back').textContent = word.cat;
+  document.getElementById('card-meaning').textContent = word.m;
+  document.getElementById('card-example').textContent = word.ex;
+  document.getElementById('card-number').textContent = `${currentIndex + 1} / ${currentDeck.length}`;
+
+  const badge = document.getElementById('card-difficulty');
+  if (s.wrongCount >= 3) { badge.textContent = '苦手'; badge.className = 'difficulty-badge hard'; }
+  else if (s.status === 'learning') { badge.textContent = '学習中'; badge.className = 'difficulty-badge medium'; }
+  else { badge.textContent = 'NEW'; badge.className = 'difficulty-badge new'; }
+
+  document.getElementById('study-progress-text').textContent = `${currentIndex + 1} / ${currentDeck.length}`;
+  document.getElementById('study-correct').textContent = `⭕ ${sessionCorrect}`;
+  document.getElementById('study-wrong').textContent = `❌ ${sessionWrong}`;
+  document.getElementById('study-progress-bar').style.width = `${(currentIndex / currentDeck.length * 100)}%`;
+}
+
+function flipCard() { document.getElementById('flashcard').classList.toggle('flipped'); }
+
+function markWord(known) {
+  const word = currentDeck[currentIndex];
+  let s = getStatus(word.w);
+  if (known) {
+    sessionCorrect++;
+    s.correctCount = (s.correctCount || 0) + 1;
+    if (s.correctCount >= 3) s.status = 'mastered';
+    else s.status = 'learning';
+  } else {
+    sessionWrong++;
+    s.wrongCount = (s.wrongCount || 0) + 1;
+    s.status = 'learning';
+    wrongWords.push(word);
+  }
+  state.wordStatus[word.w] = s;
+  saveState();
+  currentIndex++;
+  setTimeout(showCard, 200);
+}
+
+function showResults() {
+  state.sessions++;
+  state.totalCorrect += sessionCorrect;
+  state.totalWrong += sessionWrong;
+  saveState();
+
+  const pct = currentDeck.length > 0 ? Math.round(sessionCorrect / currentDeck.length * 100) : 0;
+  document.getElementById('result-score').textContent = pct + '%';
+  document.getElementById('result-score').style.color = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+
+  let msg = '';
+  if (pct >= 90) msg = '素晴らしい！この調子で頑張りましょう！🎉';
+  else if (pct >= 70) msg = 'よくできました！もう少しで完璧です！💪';
+  else if (pct >= 50) msg = 'まずまずです。苦手な単語を復習しましょう！📝';
+  else msg = '苦手な単語が多いようです。繰り返し学習しましょう！🔥';
+
+  const msgEl = document.getElementById('result-message');
+  msgEl.textContent = msg;
+  msgEl.style.background = pct >= 80 ? '#dcfce7' : pct >= 50 ? '#fef3c7' : '#fee2e2';
+  msgEl.style.color = pct >= 80 ? 'var(--success)' : pct >= 50 ? '#b45309' : 'var(--danger)';
+
+  const listEl = document.getElementById('result-wrong-list');
+  if (wrongWords.length > 0) {
+    listEl.innerHTML = '<div class="section-header" style="margin-top:16px;">間違えた単語</div>';
+    wrongWords.forEach(w => {
+      listEl.innerHTML += `<div class="word-item"><div><div class="wi-word">${w.w}</div><div class="wi-meaning">${w.m}</div></div><div class="wi-status learning">復習が必要</div></div>`;
+    });
+  } else { listEl.innerHTML = ''; }
+
+  document.getElementById('retry-btn').style.display = wrongWords.length > 0 ? '' : 'none';
+  showScreen('result');
+}
+
+function retryWrong() {
+  if (wrongWords.length === 0) return;
+  currentDeck = [...wrongWords];
+  currentIndex = 0;
+  sessionCorrect = 0;
+  sessionWrong = 0;
+  wrongWords = [];
+  showScreen('study');
+  showCard();
+}
+
+// ===== WORD LIST =====
+function renderWordList() {
+  const list = document.getElementById('word-list');
+  let filtered = [...WORDS];
+  if (searchQuery) filtered = filtered.filter(w => w.w.includes(searchQuery.toLowerCase()) || w.m.includes(searchQuery));
+  if (currentFilter !== 'all') filtered = filtered.filter(w => getStatus(w.w).status === currentFilter);
+
+  list.innerHTML = '';
+  filtered.slice(0, 100).forEach(w => {
+    const s = getStatus(w.w);
+    const statusText = s.status === 'mastered' ? '覚えた' : s.status === 'learning' ? '学習中' : '未学習';
+    const statusClass = s.status === 'mastered' ? 'mastered' : s.status === 'learning' ? 'learning' : 'new';
+    const li = document.createElement('li');
+    li.className = 'word-item';
+    li.innerHTML = `<div><div class="wi-word">${w.w}</div><div class="wi-meaning">${w.m}</div></div><div class="wi-status ${statusClass}">${statusText}</div>`;
+    list.appendChild(li);
+  });
+  if (filtered.length > 100) {
+    list.innerHTML += `<div style="text-align:center;padding:12px;color:var(--gray);font-size:0.8rem;">他 ${filtered.length - 100} 語...</div>`;
+  }
+}
+
+function filterWords(q) { searchQuery = q; renderWordList(); }
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+  renderWordList();
+}
+
+// ===== STATS =====
+function updateStats() {
+  document.getElementById('stat-total-sessions').textContent = state.sessions;
+  const mastered = WORDS.filter(w => getStatus(w.w).status === 'mastered').length;
+  document.getElementById('stat-total-mastered').textContent = mastered;
+  const total = state.totalCorrect + state.totalWrong;
+  document.getElementById('stat-avg-score').textContent = total > 0 ? Math.round(state.totalCorrect / total * 100) + '%' : '—';
+
+  const catStats = document.getElementById('category-stats');
+  catStats.innerHTML = '';
+  const cats = getCategories();
+  Object.keys(cats).forEach(cat => {
+    const words = WORDS.filter(w => w.cat === cat);
+    const m = words.filter(w => getStatus(w.w).status === 'mastered').length;
+    const pct = Math.round(m / words.length * 100);
+    catStats.innerHTML += `
+      <div style="background:#fff;border-radius:12px;padding:12px 16px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-weight:600;font-size:0.85rem;">${getCatIcon(cat)} ${cat}</span>
+          <span style="font-size:0.75rem;color:var(--gray);">${m} / ${words.length}</span>
+        </div>
+        <div class="progress-container" style="margin-bottom:0;"><div class="progress-fill" style="width:${pct}%;background:${pct>=80?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}"></div></div>
+      </div>`;
+  });
+}
+
+function showResetModal() { document.getElementById('reset-modal').classList.add('show'); }
+function hideResetModal() { document.getElementById('reset-modal').classList.remove('show'); }
+function resetAll() {
+  state = { wordStatus: {}, sessions: 0, totalCorrect: 0, totalWrong: 0 };
+  saveState();
+  hideResetModal();
+  updateStats();
+  showScreen('home');
+}
+
+// INIT
+updateHome();
+</script>
+</body>
+</html>

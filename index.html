@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美大受験 学習ポータル</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Hiragino Sans','Meiryo','Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;overflow-x:hidden}
+
+/* Animated background */
+.bg-glow{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg-glow .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:0.3;animation:float 8s ease-in-out infinite}
+.orb-1{width:400px;height:400px;background:#7c3aed;top:-100px;left:-100px;animation-delay:0s}
+.orb-2{width:350px;height:350px;background:#059669;bottom:-80px;right:-80px;animation-delay:2s}
+.orb-3{width:300px;height:300px;background:#2563eb;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:4s}
+@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
+
+.container{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:20px}
+
+/* Header */
+.hero{text-align:center;padding:40px 20px 30px}
+.hero-icon{font-size:3rem;margin-bottom:12px;animation:bounce 2s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.hero h1{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#34d399,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+.hero p{font-size:0.95rem;color:#94a3b8;line-height:1.6}
+.hero .name{font-weight:700;color:#e2e8f0}
+
+/* Countdown */
+.countdown{background:linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1));border:1px solid rgba(251,191,36,0.3);border-radius:16px;padding:20px;margin:0 0 30px;text-align:center}
+.countdown .label{font-size:0.8rem;color:#fbbf24;font-weight:600;margin-bottom:6px}
+.countdown .days-row{display:flex;justify-content:center;align-items:baseline;gap:8px}
+.countdown .days-num{font-size:3rem;font-weight:900;color:#fbbf24}
+.countdown .days-unit{font-size:1rem;color:#fcd34d}
+.countdown .sub{font-size:0.8rem;color:#a3a3a3;margin-top:8px}
+
+/* Section */
+.section-title{font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;padding-left:4px}
+
+/* App Cards */
+.app-grid{display:grid;gap:16px;margin-bottom:36px}
+
+.app-card{background:rgba(30,41,59,0.8);backdrop-filter:blur(12px);border:1px solid rgba(148,163,184,0.15);border-radius:20px;padding:24px;cursor:pointer;transition:all 0.3s ease;text-decoration:none;color:inherit;display:flex;align-items:center;gap:20px;position:relative;overflow:hidden}
+.app-card::before{content:'';position:absolute;inset:0;border-radius:20px;background:var(--glow);opacity:0;transition:opacity 0.3s}
+.app-card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 8px 32px var(--shadow)}
+.app-card:hover::before{opacity:0.08}
+.app-card:active{transform:translateY(-2px)}
+
+.app-icon{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;background:var(--icon-bg)}
+.app-info{flex:1;min-width:0}
+.app-info h3{font-size:1.1rem;font-weight:700;margin-bottom:4px;color:#f1f5f9}
+.app-info p{font-size:0.8rem;color:#94a3b8;line-height:1.5}
+.app-badge{display:inline-block;font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:6px;margin-top:6px}
+.app-arrow{font-size:1.2rem;color:#475569;transition:all 0.3s}
+.app-card:hover .app-arrow{color:var(--accent);transform:translateX(4px)}
+
+/* Card variants */
+.card-green{--accent:#34d399;--shadow:rgba(5,150,105,0.2);--glow:linear-gradient(135deg,#059669,#34d399);--icon-bg:linear-gradient(135deg,#064e3b,#065f46)}
+.card-green .app-badge{background:rgba(5,150,105,0.2);color:#34d399}
+.card-blue{--accent:#60a5fa;--shadow:rgba(37,99,235,0.2);--glow:linear-gradient(135deg,#2563eb,#60a5fa);--icon-bg:linear-gradient(135deg,#1e3a5f,#1e40af)}
+.card-blue .app-badge{background:rgba(37,99,235,0.2);color:#60a5fa}
+.card-purple{--accent:#a78bfa;--shadow:rgba(124,58,237,0.2);--glow:linear-gradient(135deg,#7c3aed,#a78bfa);--icon-bg:linear-gradient(135deg,#3b0764,#5b21b6)}
+.card-purple .app-badge{background:rgba(124,58,237,0.2);color:#a78bfa}
+.card-amber{--accent:#fbbf24;--shadow:rgba(245,158,11,0.2);--glow:linear-gradient(135deg,#f59e0b,#fbbf24);--icon-bg:linear-gradient(135deg,#78350f,#92400e)}
+.card-amber .app-badge{background:rgba(245,158,11,0.2);color:#fbbf24}
+
+/* Schedule mini card */
+.schedule-card{background:rgba(30,41,59,0.6);backdrop-filter:blur(12px);border:1px solid rgba(148,163,184,0.12);border-radius:16px;padding:20px;margin-bottom:36px}
+.schedule-card h3{font-size:1rem;font-weight:700;margin-bottom:12px;color:#f1f5f9}
+.timeline{display:flex;flex-direction:column;gap:8px}
+.tl-item{display:flex;align-items:center;gap:12px;font-size:0.82rem}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tl-month{font-weight:700;color:#94a3b8;min-width:50px}
+.tl-text{color:#cbd5e1}
+.tl-now{background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:6px 12px}
+.tl-now .tl-month{color:#fbbf24}
+
+/* Footer */
+.footer{text-align:center;padding:30px 20px;color:#475569;font-size:0.75rem}
+.footer a{color:#64748b;text-decoration:none}
+
+@media(max-width:480px){
+  .hero h1{font-size:1.5rem}
+  .app-card{padding:16px;gap:14px}
+  .app-icon{width:52px;height:52px;font-size:1.4rem;border-radius:14px}
+  .countdown .days-num{font-size:2.2rem}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-glow">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-icon">🎨</div>
+    <h1>美大受験 学習ポータル</h1>
+    <p>武蔵野美術大学 基礎デザイン学科 合格を目指して<br>毎日の学習をここからスタート！</p>
+  </div>
+
+  <!-- Countdown -->
+  <div class="countdown" id="countdown"></div>
+
+  <!-- Apps -->
+  <div class="section-title">📱 学習アプリ</div>
+  <div class="app-grid">
+
+    <a class="app-card card-green" href="eiken-pre2-flashcard.html">
+      <div class="app-icon">🟢</div>
+      <div class="app-info">
+        <h3>英検準2級 単語フラッシュカード</h3>
+        <p>6月28日の英検に向けて！準2級頻出500語をフラッシュカード形式で学習。カウントダウン＆学習ペース表示付き。</p>
+        <span class="app-badge">直近の目標 → 6/28 英検準2級</span>
+      </div>
+      <div class="app-arrow">→</div>
+    </a>
+
+    <a class="app-card card-blue" href="eiken2-flashcard.html">
+      <div class="app-icon">🔵</div>
+      <div class="app-info">
+        <h3>英検2級 単語フラッシュカード</h3>
+        <p>美大入試の英語対策。英検2級レベルの560語を収録。苦手特訓モードで効率的に語彙力を伸ばそう。</p>
+        <span class="app-badge">入試本番レベル → 2月 武蔵美入試</span>
+      </div>
+      <div class="app-arrow">→</div>
+    </a>
+
+    <a class="app-card card-purple" href="kokugo-vocab.html">
+      <div class="app-icon">🟣</div>
+      <div class="app-info">
+        <h3>国語 漢字・語彙トレーニング</h3>
+        <p>漢字の読み書き・四字熟語・慣用句・評論キーワード・美術用語を収録。カード／4択クイズ／タイピングの3形式。</p>
+        <span class="app-badge">170問 → 7カテゴリ</span>
+      </div>
+      <div class="app-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- Schedule -->
+  <div class="section-title">📅 これからのスケジュール</div>
+  <div class="schedule-card">
+    <h3>10ヶ月ロードマップ</h3>
+    <div class="timeline" id="timeline"></div>
+    <div style="margin-top:12px;text-align:center">
+      <a href="美大受験スケジュール.xlsx" style="color:#60a5fa;font-size:0.8rem;text-decoration:none;font-weight:600">📊 詳細スケジュール（Excel）を開く →</a>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="section-title">💡 今日のアドバイス</div>
+  <div class="schedule-card" id="daily-tip"></div>
+
+  <div class="footer">
+    <p>武蔵美 基礎デザイン ／ 視覚伝達デザイン ／ デザイン情報 ／ 多摩美 グラフィック</p>
+  </div>
+
+</div>
+
+<script>
+// Countdown
+const EIKEN_DATE = new Date('2026-06-28');
+const EXAM_DATE = new Date('2027-02-15');
+
+function updateCountdown() {
+  const now = new Date();
+  const eikenDiff = Math.ceil((EIKEN_DATE - now) / (1000*60*60*24));
+  const examDiff = Math.ceil((EXAM_DATE - now) / (1000*60*60*24));
+  const el = document.getElementById('countdown');
+
+  if (eikenDiff > 0) {
+    el.innerHTML = `
+      <div class="label">🟢 次の目標：英検準2級</div>
+      <div class="days-row"><span class="days-num">${eikenDiff}</span><span class="days-unit">日後（6月28日）</span></div>
+      <div class="sub">🎨 武蔵美入試まで ${examDiff} 日（2027年2月）</div>`;
+  } else if (examDiff > 0) {
+    el.innerHTML = `
+      <div class="label">🎨 武蔵美入試まで</div>
+      <div class="days-row"><span class="days-num">${examDiff}</span><span class="days-unit">日</span></div>
+      <div class="sub">最後まで諦めずに頑張ろう！</div>`;
+  } else {
+    el.innerHTML = `<div class="label">受験お疲れさまでした！</div>`;
+  }
+}
+
+// Timeline
+const months = [
+  {m:'4月',t:'基礎固め — デッサン基礎・英単語学習開始',dot:'#059669'},
+  {m:'5月',t:'色彩構成開始・英語長文・オープンキャンパス確認',dot:'#059669'},
+  {m:'6月',t:'デッサン強化・英検準2級受験・オープンキャンパス',dot:'#fbbf24'},
+  {m:'7月',t:'夏期講習前半・文法総復習・小論文練習',dot:'#2563eb'},
+  {m:'8月',t:'夏期講習後半・志望校別対策・英検過去問',dot:'#2563eb'},
+  {m:'9月',t:'実技模試・武蔵美過去問分析・出願準備',dot:'#2563eb'},
+  {m:'10月',t:'感覚テスト実戦練習・英語過去問・面接対策',dot:'#7c3aed'},
+  {m:'11月',t:'弱点克服・過去問繰り返し・出願書類完成',dot:'#7c3aed'},
+  {m:'12月',t:'直前実技演習・英単語最終確認・出願手続き',dot:'#7c3aed'},
+  {m:'1月',t:'総仕上げ・共通テスト・面接リハーサル',dot:'#dc2626'},
+  {m:'2月',t:'★ 武蔵美入試本番 ★ 多摩美入試本番',dot:'#dc2626'},
+];
+
+function renderTimeline() {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1; // 1-12
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = '';
+  months.forEach((item, i) => {
+    const monthNum = ((i + 4 - 1) % 12) + 1; // 4月=4, 5月=5, ... 2月=2
+    const isNow = (now.getFullYear() === 2026 && monthNum === currentMonth) ||
+                  (now.getFullYear() === 2027 && monthNum <= 2 && currentMonth === monthNum);
+    const isFuture = (now.getFullYear() === 2026 && monthNum > currentMonth) ||
+                     (monthNum <= 2 && now.getFullYear() <= 2026);
+
+    const div = document.createElement('div');
+    div.className = 'tl-item' + (isNow ? ' tl-now' : '');
+    const opacity = (!isNow && !isFuture) ? 'opacity:0.5' : '';
+    div.innerHTML = `<div class="tl-dot" style="background:${item.dot};${opacity}"></div><div class="tl-month">${item.m}${isNow?' ◀':''}</div><div class="tl-text" style="${opacity}">${item.t}</div>`;
+    tl.appendChild(div);
+  });
+}
+
+// Daily tip
+const tips = [
+  {icon:'📖',title:'英単語は朝イチが効果的',body:'起きてすぐの15分が記憶のゴールデンタイム。通学前にフラッシュカードを30語やってみよう。'},
+  {icon:'🎨',title:'デッサンは「見る力」が9割',body:'描く前に対象をよく観察する時間を取ろう。形の比率、光と影の関係を頭の中で整理してから鉛筆を持つ。'},
+  {icon:'✍️',title:'小論文は「型」を覚えよう',body:'問題提起→意見→根拠→反論への応答→結論。この型を身につければ、どんなテーマでも800字書ける。'},
+  {icon:'🧠',title:'感覚テストは「なぜ？」を考える',body:'武蔵美基礎デの感覚テストは正解がない。大事なのは「なぜそう考えたか」の論理性と独自性。'},
+  {icon:'💪',title:'苦手単語は寝る前に復習',body:'寝る前の復習は記憶の定着に効果的。アプリの苦手特訓モードで10分だけやってから寝よう。'},
+  {icon:'🎯',title:'過去問は「時間を計って」解く',body:'実力を測るには本番と同じ条件で。時間配分の感覚を体に染み込ませよう。'},
+  {icon:'🌈',title:'色彩感覚は日常で磨ける',body:'街の看板、服のコーディネート、自然の色…日常の中で「この配色いいな」と思ったらスマホで撮っておこう。'},
+];
+
+function renderTip() {
+  const dayIdx = Math.floor(Date.now() / (1000*60*60*24)) % tips.length;
+  const tip = tips[dayIdx];
+  document.getElementById('daily-tip').innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:14px">
+      <div style="font-size:2rem;flex-shrink:0">${tip.icon}</div>
+      <div>
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px;color:#f1f5f9">${tip.title}</h3>
+        <p style="font-size:0.85rem;color:#94a3b8;line-height:1.6">${tip.body}</p>
+      </div>
+    </div>`;
+}
+
+updateCountdown();
+renderTimeline();
+renderTip();
+</script>
+</body>
+</html>
